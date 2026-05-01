@@ -1,0 +1,25 @@
+﻿# Subrepositorio independiente (tiene su propio git)
+SymbolicRegressionPackage/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Lean / Lake build
+lean4/**/.lake/
+lean4/**/build/
+
+# Archivos del sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# VS Code
+.vscode/
+
+# Temporales
+*.tmp
+*.log

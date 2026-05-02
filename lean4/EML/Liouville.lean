@@ -33,7 +33,6 @@
 
 import EML.Basic
 import EML.Extended
-import EML.Expressivity
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Data.Complex.Basic
@@ -151,12 +150,12 @@ theorem Fin.castLE_refl_eq {n : ℕ} (h : n ≤ n) (i : Fin n) :
 
     La forma `∃ h, ...` (en lugar de `... ∧ ∀ i, ... castLE h ...`)
     permite que la prueba `h` esté en alcance al construir el índice. -/
-def extends (L L' : LiouvilleTower) : Prop :=
+def isSubTower (L L' : LiouvilleTower) : Prop :=
   ∃ h : L.depth ≤ L'.depth,
     ∀ i : Fin L.depth, L.steps i = L'.steps (i.castLE h)
 
 /-- La relación de extensión es reflexiva. -/
-theorem extends_refl (L : LiouvilleTower) : L.extends L :=
+theorem isSubTower_refl (L : LiouvilleTower) : L.isSubTower L :=
   ⟨Nat.le_refl _, fun i => by
     -- castLE (le_refl n) i = i  por Fin.ext rfl
     congr 1
@@ -204,10 +203,8 @@ end LiouvilleTower
 
 /-- El nivel mínimo en la Torre de Liouville de una función elemental,
     codificado como el número mínimo de extensiones necesarias. -/
-noncomputable def liouville_level_of (φ : ℂ → ℂ) : ℕ :=
-  if IsEMLElementary (fun x => (φ x).re)  -- proxy via la parte real
-  then 0  -- placeholder; el valor real requiere inducción en la torre
-  else 0  -- funciones especiales: nivel infinito (representado como 0 aquí)
+noncomputable def liouville_level_of (φ : ℂ → ℂ) : ℕ := 0
+  -- placeholder: valor real requiere inducción formal sobre la Torre de Liouville
 
 -- Lemas de nivel para funciones canónicas
 

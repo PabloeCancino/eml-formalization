@@ -238,54 +238,60 @@ inductive TRSUpStep : EMLTermNamed → EMLTermNamed → Prop where
 -- que decrece estrictamente en cada aplicación de R1-R15.
 -- Formalizamos via `measure namedCount` (R1 y R2 completamente, R3-R15 con sorry).
 
--- Cuenta el número total de constructores "nombrados" en un árbol.
-def namedCount : EMLTermNamed → ℕ
+-- Medida de terminación: interpretación polinomial ponderada.
+-- Constructores que DUPLICAN subárboles (nSqr, nHypot, nCosh) cuentan
+-- su argumento DOS VECES. Los pesos se eligen para que cada regla R1-R15
+-- haga decrecer estrictamente la medida:
+--   nExp/nLog: +1    nMinus/nSub: +3    nInv: +6    nPlus: +7
+--   nTimes: +11   nSqr: 2·W(x)+12  nDivide: +18  nHalf: +26
+--   nSqrt: +29   nPower: +14  nAvg: +34
+--   nCosh: 2·W(x)+40  nHypot: 2·W(x)+2·W(y)+61
+def namedCountW : EMLTermNamed → ℕ
   | one           => 0
-  | app t s       => t.namedCount + s.namedCount
-  | nExp t        => t.namedCount + 1
-  | nLog t        => t.namedCount + 1
-  | nMinus t      => t.namedCount + 1
-  | nSubtract t s => t.namedCount + s.namedCount + 1
-  | nPlus t s     => t.namedCount + s.namedCount + 1
-  | nInv t        => t.namedCount + 1
-  | nTimes t s    => t.namedCount + s.namedCount + 1
-  | nSqr t        => t.namedCount + 1
-  | nSqrt t       => t.namedCount + 1
-  | nPower t s    => t.namedCount + s.namedCount + 1
-  | nDivide t s   => t.namedCount + s.namedCount + 1
-  | nHalf t       => t.namedCount + 1
-  | nAvg t s      => t.namedCount + s.namedCount + 1
-  | nHypot t s    => t.namedCount + s.namedCount + 1
-  | nCosh t       => t.namedCount + 1
+  | app t s       => t.namedCountW + s.namedCountW
+  | nExp t        => t.namedCountW + 1
+  | nLog t        => t.namedCountW + 1
+  | nMinus t      => t.namedCountW + 3
+  | nSubtract t s => t.namedCountW + s.namedCountW + 3
+  | nPlus t s     => t.namedCountW + s.namedCountW + 7
+  | nInv t        => t.namedCountW + 6
+  | nTimes t s    => t.namedCountW + s.namedCountW + 11
+  | nSqr t        => 2 * t.namedCountW + 12   -- cuenta t dos veces (R8: nSqr→nTimes t t)
+  | nSqrt t       => t.namedCountW + 29
+  | nPower t s    => t.namedCountW + s.namedCountW + 14
+  | nDivide t s   => t.namedCountW + s.namedCountW + 18
+  | nHalf t       => t.namedCountW + 26
+  | nAvg t s      => t.namedCountW + s.namedCountW + 34
+  | nHypot t s    => 2 * t.namedCountW + 2 * s.namedCountW + 61  -- duplica (R14)
+  | nCosh t       => 2 * t.namedCountW + 40   -- cuenta t dos veces (R15)
 
-/-- Para R1–R15, el LHS tiene estrictamente más constructores nombrados
-    que el RHS. Para ctxLeft/ctxRight, la reducción preserva la disminución
-    porque namedCount es aditivo en `app`. -/
+-- Alias para retrocompatibilidad con trsUp_terminates
+abbrev namedCount := namedCountW
+
+/-- Interpretación polinomial: cada paso TRSUpStep decrece namedCountW estrictamente.
+    Las reglas que duplican subárboles (R8: nSqr→nTimes t t, R14: nHypot→nSqrt(…nSqr…),
+    R15: nCosh→nAvg(nExp, nExp(nMinus))) tienen pesos 2·W(x) en namedCountW,
+    garantizando que la medida siempre decrece. -/
 theorem trsUp_namedCount_decreases {t t' : EMLTermNamed}
-    (h : TRSUpStep t t') : namedCount t' < namedCount t := by
+    (h : TRSUpStep t t') : namedCountW t' < namedCountW t := by
   induction h with
-  -- R1 y R2: simp reduce el goal completamente
-  | R1 x         => simp [namedCount]
-  | R2 x         => simp [namedCount]
-  -- R3-R15: namedCount no es la medida correcta para estas reglas
-  -- (e.g. R8: nSqr x → nTimes x x duplica namedCount(x)).
-  -- Se requiere interpretación polinomial. Marcado como sorry hasta formalización.
-  | R3 x y       => simp [namedCount]; sorry
-  | R4 x         => simp [namedCount]; sorry
-  | R5 x y       => simp [namedCount]; sorry
-  | R6 x         => simp [namedCount]; sorry
-  | R7 x y       => simp [namedCount]; sorry
-  | R8 x         => simp [namedCount]; sorry
-  | R9 x         => simp [namedCount]; sorry
-  | R10 x y      => simp [namedCount]; sorry
-  | R11 x y      => simp [namedCount]; sorry
-  | R12 x        => simp [namedCount]; sorry
-  | R13 x y      => simp [namedCount]; sorry
-  | R14 x y      => simp [namedCount]; sorry
-  | R15 x        => simp [namedCount]; sorry
-  -- Reglas de contexto: aditivas en namedCount
-  | ctxLeft  t t' s htt' ih => simp [namedCount]; omega
-  | ctxRight t s s' hss' ih => simp [namedCount]; omega
+  | R1 x         => simp [namedCountW]
+  | R2 x         => simp [namedCountW]
+  | R3 x y       => simp [namedCountW]; omega
+  | R4 x         => simp [namedCountW]; omega
+  | R5 x y       => simp [namedCountW]; omega
+  | R6 x         => simp [namedCountW]
+  | R7 x y       => simp [namedCountW]; omega
+  | R8 x         => simp [namedCountW]; omega
+  | R9 x         => simp [namedCountW]
+  | R10 x y      => simp [namedCountW]; omega
+  | R11 x y      => simp [namedCountW]; omega
+  | R12 x        => simp [namedCountW, nTwo]       -- nTwo = nPlus one one → peso 7
+  | R13 x y      => simp [namedCountW]
+  | R14 x y      => simp [namedCountW]; omega
+  | R15 x        => simp [namedCountW]; omega
+  | ctxLeft  t t' s _ ih => simp [namedCountW]; omega
+  | ctxRight t s s' _ ih => simp [namedCountW]; omega
 
 /-- TRS↑ termina: todo término es accesible bajo la relación inversa.
 

@@ -65,7 +65,7 @@ noncomputable def emlLog : EReal → EReal
 theorem emlExp_pos (x : EReal) : 0 < emlExp x ∨ emlExp x = 0 := by
   induction x using EReal.rec with
   | bot => right; simp
-  | top => left; exact EReal.top_pos
+  | top => left; exact (EReal.zero_lt_top)  -- EReal.top_pos renamed
   | coe r => left; exact_mod_cast Real.exp_pos r
 
 @[simp] theorem emlLog_bot : emlLog ⊥ = ⊥ := rfl
@@ -73,11 +73,20 @@ theorem emlExp_pos (x : EReal) : 0 < emlExp x ∨ emlExp x = 0 := by
 
 theorem emlLog_real_pos {r : ℝ} (hr : 0 < r) :
     emlLog (r : EReal) = (Real.log r : ℝ) := by
-  simp [emlLog, not_le.mpr hr]
+  -- TODO: simp [emlLog, not_le.mpr hr] fails in v4.29.0 (match not reducing)
+  -- The math: emlLog (r:EReal) unfolds to if r ≤ 0 then ⊥ else ↑(log r)
+  -- Since hr : 0 < r, we have ¬(r ≤ 0), so result = ↑(log r)
+  simp only [emlLog]
+  split_ifs with h
+  · exact absurd (lt_of_lt_of_le hr (le_of_lt (not_le.mp (not_not.mpr h)))) (lt_irrefl _)
+  · rfl
 
 @[simp] theorem emlLog_zero : emlLog (0 : EReal) = ⊥ := by
-  have : (0 : EReal) = ((0 : ℝ) : EReal) := by norm_cast
-  simp [this, emlLog, le_refl]
+  -- emlLog ((0:ℝ):EReal) = if 0 ≤ 0 then ⊥ else ... = ⊥
+  simp only [emlLog]
+  split_ifs with h
+  · rfl
+  · exact absurd le_rfl h
 
 @[simp] theorem emlLog_one : emlLog (1 : EReal) = 0 := by
   have : (1 : EReal) = ((1 : ℝ) : EReal) := by norm_cast
@@ -96,13 +105,11 @@ theorem emlLog_emlExp : ∀ x : EReal, emlLog (emlExp x) = x := by
 /-- exp(log(x)) = x cuando x > 0 y x ≠ ⊤. -/
 theorem emlExp_emlLog_pos {x : EReal} (hpos : 0 < x) (htop : x ≠ ⊤) :
     emlExp (emlLog x) = x := by
-  obtain ⟨r, rfl⟩ : ∃ r : ℝ, (r : EReal) = x := by
-    rcases x with _ | _ | r
-    · exact absurd hpos (lt_irrefl _)
-    · exact absurd rfl htop
-    · exact ⟨r, rfl⟩
-  have hr : 0 < r := by exact_mod_cast hpos
-  rw [emlLog_real_pos hr, emlExp_real, Real.exp_log hr]
+  -- x is finite positive: x = ↑r for some r : ℝ with r > 0
+  have hx : x ≠ ⊥ := ne_of_gt hpos
+  lift x to ℝ using ⟨hx, htop⟩  -- lift EReal to ℝ
+  have hr : 0 < x := by exact_mod_cast hpos
+  simp [emlLog_real_pos hr, emlExp_real, Real.exp_log hr]
 
 /-- exp(log(x)) = x cuando x ≥ 0 en EReal.
     Incluye x = 0 (via log 0 = ⊥, exp ⊥ = 0) y x = ⊤ (via log ⊤ = ⊤, exp ⊤ = ⊤).
@@ -140,7 +147,18 @@ lemma ereal_shift_cancel (e : ℝ) (x : EReal) :
   | bot => simp
   | top => simp
   | coe r =>
-    push_cast; ring
+    -- (e:EReal) + -((e:EReal) + -(r:EReal)) = (r:EReal)
+    -- Equivalent to e + -(e - r) = r in ℝ lifted to EReal
+    have key : (e : EReal) + -((e : EReal) + (-(r : EReal))) = (r : EReal) := by
+      rw [show -((r : ℝ) : EReal) = ((-r : ℝ) : EReal) from (EReal.coe_neg r).symm]
+      rw [show ((e : EReal) + ((-r : ℝ) : EReal)) = ((e + (-r) : ℝ) : EReal) from
+            (EReal.coe_add e (-r)).symm]
+      rw [show -((e + (-r) : ℝ) : EReal) = ((-(e + (-r)) : ℝ) : EReal) from
+            (EReal.coe_neg _).symm]
+      rw [show ((e : EReal) + ((-(e + (-r)) : ℝ) : EReal)) = ((e + -(e + (-r)) : ℝ) : EReal) from
+            (EReal.coe_add e _).symm]
+      norm_cast; ring
+    exact key
 
 -- ============================================================
 -- §4. TIPO EMLTermV (GRAMÁTICA CON VARIABLE)

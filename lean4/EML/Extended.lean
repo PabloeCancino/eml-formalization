@@ -207,16 +207,13 @@ theorem ereval_tExp (t : EMLTermV) (z : EReal) :
 theorem ereval_tLog (t : EMLTermV) (z : EReal) :
     ⟦tLog t⟧ₑ(z) = emlLog (⟦t⟧ₑ(z)) := by
   simp only [tLog, ereval_app, ereval_one]
-  -- 1. emlLog(one) = 0, luego -0 = 0 y sumar 0 no cambia nada
-  rw [emlLog_one, neg_zero, add_zero]
-  -- 2. emlLog_emlExp: log(exp(x)) = x, colapsa la capa interior
+  -- Simplificar emlLog(1) = 0 con simp (maneja coerciones en (1:EReal))
+  simp only [emlLog_one, neg_zero, add_zero]
+  -- emlLog_emlExp: log(exp(x)) = x
   rw [emlLog_emlExp]
-  -- Goal ahora: emlExp (1 : EReal) + (-emlLog (⟦t⟧ₑ(z)) + ...))
-  -- Más precisamente: ↑(Real.exp 1) + -(↑(Real.exp 1) + (-emlLog (⟦t⟧ₑ(z)))) = emlLog (⟦t⟧ₑ(z))
-  -- 3. Aplicar ereal_shift_cancel con e = Real.exp 1
+  -- Aplicar ereal_shift_cancel con e = Real.exp 1
   have hsc := ereal_shift_cancel (Real.exp 1) (emlLog (⟦t⟧ₑ(z)))
   simp only [emlExp_real] at hsc
-  -- hsc : ↑(Real.exp 1) + -(↑(Real.exp 1) + -emlLog (⟦t⟧ₑ(z))) = emlLog (⟦t⟧ₑ(z))
   exact hsc
 
 -- ============================================================
@@ -248,9 +245,8 @@ def tMinusV (x : EMLTermV) : EMLTermV :=
     Demuestra que Minus(x) = −x se formaliza con log(0) = ⊥. -/
 theorem ereval_tMinusV (x : EMLTermV) (z : EReal) :
     ⟦tMinusV x⟧ₑ(z) = -⟦x⟧ₑ(z) := by
-  simp only [tMinusV, ereval_app, ereval_tLog, ereval_tExp]
-  rw [emlLog_emlExp, emlLog_zero]
-  simp [emlExp_bot]
+  simp only [tMinusV, ereval_app, ereval_tLog, ereval_tExp, ereval_one,
+             emlLog_one, emlLog_zero, emlExp_bot, zero_add]
 
 -- Casos especiales verificados:
 
@@ -311,7 +307,9 @@ theorem ereval_tInvV (t : EMLTermV) (z : EReal) :
 theorem ereval_tInvV_real (t : EMLTermV) (z : EReal) (r : ℝ)
     (hr : 0 < r) (heq : ⟦t⟧ₑ(z) = (r : EReal)) :
     ⟦tInvV t⟧ₑ(z) = ((r⁻¹ : ℝ) : EReal) := by
-  rw [ereval_tInvV, heq, emlLog_real_pos hr, emlExp_real]
+  rw [ereval_tInvV, heq, emlLog_real_pos hr]
+  rw [show -(Real.log r : EReal) = ((- Real.log r : ℝ) : EReal) by push_cast; ring]
+  rw [emlExp_real]
   norm_cast
   rw [← Real.log_inv, Real.exp_log (inv_pos.mpr hr)]
 
@@ -327,7 +325,10 @@ theorem ereval_tTimesV_real (t s : EMLTermV) (z : EReal) (r₁ r₂ : ℝ)
     rw [ereval_tLog, h₁, emlLog_real_pos hr₁_pos]
     exact_mod_cast Real.log_nonneg hr₁
   rw [ereval_tPlusV _ _ _ hlog, ereval_tLog, ereval_tLog, h₁, h₂,
-      emlLog_real_pos hr₁_pos, emlLog_real_pos hr₂, emlExp_real]
+      emlLog_real_pos hr₁_pos, emlLog_real_pos hr₂]
+  rw [show (Real.log r₁ : EReal) + (Real.log r₂ : EReal) =
+          ((Real.log r₁ + Real.log r₂ : ℝ) : EReal) by push_cast; ring]
+  rw [emlExp_real]
   norm_cast
   rw [← Real.log_mul hr₁_pos.ne' hr₂.ne', Real.exp_log (mul_pos hr₁_pos hr₂)]
 

@@ -294,15 +294,24 @@ theorem trsUp_namedCount_decreases {t t' : EMLTermNamed}
     El orden de ℕ es bien fundado, por lo que el sistema termina. -/
 theorem trsUp_terminates : ∀ t : EMLTermNamed, Acc (fun t t' => TRSUpStep t' t) t := by
   intro t
-  -- Inducción bien fundada sobre namedCount t
-  apply Nat.strongRecOn (n := namedCount t) (fun n => ∀ t, namedCount t = n → Acc _ t)
-  · intro n ih t ht
+  -- Inducción sobre una cota n ≥ namedCount t (evita API de strong_rec)
+  suffices h : ∀ n t, namedCount t ≤ n → Acc (fun t t' => TRSUpStep t' t) t from
+    h (namedCount t) t le_rfl
+  intro n
+  induction n with
+  | zero =>
+    intro t ht
     apply Acc.intro
     intro t' hstep
-    apply ih (namedCount t')
-    · rw [← ht]; exact trsUp_namedCount_decreases hstep
-    · rfl
-  · rfl
+    exact absurd (Nat.lt_of_lt_of_le (trsUp_namedCount_decreases hstep) ht)
+                 (Nat.not_lt_zero _)
+  | succ n ih =>
+    intro t ht
+    apply Acc.intro
+    intro t' hstep
+    apply ih
+    exact Nat.lt_succ_iff.mp
+          (Nat.lt_of_lt_of_le (trsUp_namedCount_decreases hstep) ht)
 
 -- ============================================================
 -- §6. FORMA NORMAL DE EXPANSIÓN (FNE)
@@ -389,7 +398,7 @@ theorem trsDown_not_confluent :
   intro h
   have h1 := h (Real.exp 1)
   simp only [Complex.ofReal_exp] at h1
-  simp only [Complex.ofReal_exp, Complex.ofReal_one] at h1
+  simp only [Complex.ofReal_one] at h1
   simp at h1
   have : Complex.exp (Complex.exp 1 - 1) ≠ 1 := by
     intro heq

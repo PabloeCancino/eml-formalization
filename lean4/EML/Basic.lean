@@ -346,6 +346,98 @@ theorem eval_tSubtract (t s : EMLTerm) (z : ℂ)
   -- goal: exp(log ⟦t⟧(z)) - log(exp ⟦s⟧(z)) = ⟦t⟧(z) - ⟦s⟧(z)
   rw [Complex.exp_log ht, Complex.log_exp hbrs.1 hbrs.2]
 
+-- R4 semántico: ⟦tMinus(t)⟧(z) = -⟦t⟧(z)
+-- tMinus t = app (tLog one) (tExp t)
+-- Prueba: ⟦tLog one⟧(z) = log(1) = 0; luego exp(0) - log(exp(⟦t⟧(z))) = 1 - 0 - ⟦t⟧(z)
+-- Pero exp(0) = 1, log(exp(w)) = w cuando im(w) ∈ Ioc(−π,π).
+-- Resultado: 1 - ... — ESPERA: la definición de tMinus es app (tLog one) (tExp t),
+-- así ⟦tMinus t⟧(z) = exp(⟦tLog one⟧(z)) - log(⟦tExp t⟧(z))
+--                    = exp(log 1)           - log(exp(⟦t⟧(z)))
+--                    = exp(0)               - ⟦t⟧(z)   [log_exp]
+--                    = 1 - ⟦t⟧(z)          — NO es -⟦t⟧(z) en ℂ con log 1 = 0
+-- El resultado correcto en ℂ es: ⟦tMinus t⟧(z) = 1 - ⟦t⟧(z), no -⟦t⟧(z).
+-- La negación exacta requiere EReal con log(0) = -∞ (ver Extended.lean tMinusV).
+/-- En ℂ, tMinus evalúa a `1 - ⟦t⟧(z)` (NO a `-⟦t⟧(z)`).
+    La negación exacta usa EMLTermV.tMinusV en Extended.lean. -/
+theorem eval_tMinus (t : EMLTerm) (z : ℂ)
+    (hbrt : (⟦t⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    ⟦tMinus t⟧(z) = 1 - ⟦t⟧(z) := by
+  simp only [tMinus, eval_app, eval_tExp]
+  -- ⟦tLog one⟧(z) = 0 porque log(1) = 0
+  have hlog1 : ⟦tLog one⟧(z) = 0 := by
+    rw [eval_tLog one z (by simp [eval_one])]
+    · simp [eval_one]
+    · simp only [eval_one, Complex.log_one, Complex.zero_im]
+      exact ⟨by linarith [Real.pi_pos], by linarith [Real.pi_pos]⟩
+  rw [hlog1, Complex.exp_zero, Complex.log_exp hbrt.1 hbrt.2]
+
+-- R5 semántico: ⟦tPlus(t, s)⟧(z) = ⟦t⟧(z) + ⟦s⟧(z)
+-- tPlus t s = tSubtract t (tMinus s) = t - (1 - s) = t + s - 1
+-- NOTA: en ℂ, eval_tMinus da 1 - s, así que:
+--   tSubtract t (tMinus s) = t - (1 - s) = t + s - 1  — NO es t + s.
+-- La suma exacta requiere EReal (ver ereval_tPlusV en Extended.lean).
+/-- En ℂ, tPlus evalúa a `⟦t⟧(z) + ⟦s⟧(z) - 1`.
+    La suma exacta usa EMLTermV.tPlusV en Extended.lean. -/
+theorem eval_tPlus (t s : EMLTerm) (z : ℂ)
+    (ht    : ⟦t⟧(z) ≠ 0)
+    (hbrt  : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbrs  : (⟦s⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbrs2 : (1 - ⟦s⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    ⟦tPlus t s⟧(z) = ⟦t⟧(z) + ⟦s⟧(z) - 1 := by
+  simp only [tPlus]
+  rw [eval_tSubtract t (tMinus s) z ht hbrt]
+  · rw [eval_tMinus s z hbrs]; ring
+  · rw [eval_tMinus s z hbrs]; exact hbrs2
+
+-- R6 semántico: ⟦tInv(t)⟧(z) = Complex.exp(1) / ⟦t⟧(z)
+-- tInv t = tExp(tMinus(tLog t)).
+-- En ℂ: tMinus da 1 - x, así tMinus(tLog t) evalúa a 1 - log(t).
+-- Resultado: exp(1 - log(t)) = exp(1) · exp(-log(t)) = e / t.
+-- El inverso exacto 1/t requiere EReal (tMinusV da -log(t) = log(1/t)).
+/-- En ℂ, tInv evalúa a `Complex.exp 1 / ⟦t⟧(z)` (NO a `(⟦t⟧(z))⁻¹`).
+    El inverso exacto usa EMLTermV.tInvV en Extended.lean. -/
+theorem eval_tInv (t : EMLTerm) (z : ℂ)
+    (ht   : ⟦t⟧(z) ≠ 0)
+    (hbrt : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
+    ⟦tInv t⟧(z) = Complex.exp 1 / ⟦t⟧(z) := by
+  simp only [tInv, eval_tExp]
+  have hlogt_eq : ⟦tLog t⟧(z) = Complex.log ⟦t⟧(z) := eval_tLog t z ht hbrt
+  have hbr_logt : (⟦tLog t⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi := by
+    rw [hlogt_eq]; exact ⟨hbrt.1, le_of_lt hbrt.2⟩
+  rw [eval_tMinus (tLog t) z hbr_logt, hlogt_eq]
+  rw [Complex.exp_sub, Complex.exp_log ht]
+
+-- R7 semántico: ⟦tTimes(t, s)⟧(z) = ⟦t⟧(z) * ⟦s⟧(z)
+-- tTimes t s = tExp (tPlus (tLog t) (tLog s))
+-- En ℂ, eval_tPlus da log(t) + log(s) - 1, así:
+--   tExp(tPlus(tLog t, tLog s)) = exp(log t + log s - 1) = t·s/e  — NO t·s
+-- La multiplicación exacta requiere EReal (ver ereval_tTimesV en Extended.lean).
+-- Aquí documentamos el resultado real en ℂ:
+/-- En ℂ, tTimes evalúa a `⟦t⟧(z) * ⟦s⟧(z) / Complex.exp 1`.
+    El producto exacto usa EMLTermV.tTimesV en Extended.lean. -/
+theorem eval_tTimes (t s : EMLTerm) (z : ℂ)
+    (ht   : ⟦t⟧(z) ≠ 0)
+    (hs   : ⟦s⟧(z) ≠ 0)
+    (hbrt : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbrs : (Complex.log (⟦s⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hlogt_ne : ⟦tLog t⟧(z) ≠ 0)
+    (hbr_logt : (Complex.log (⟦tLog t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_logs : (⟦tLog s⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbr_logs2 : (1 - ⟦tLog s⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    ⟦tTimes t s⟧(z) = ⟦t⟧(z) * ⟦s⟧(z) / Complex.exp 1 := by
+  simp only [tTimes, eval_tExp]
+  rw [eval_tPlus (tLog t) (tLog s) z hlogt_ne hbr_logt hbr_logs hbr_logs2]
+  rw [eval_tLog t z ht hbrt, eval_tLog s z hs hbrs]
+  -- goal: exp(log ⟦t⟧(z) + log ⟦s⟧(z) - 1) = ⟦t⟧(z) * ⟦s⟧(z) / exp 1
+  rw [show Complex.log ⟦t⟧(z) + Complex.log ⟦s⟧(z) - 1 =
+        Complex.log ⟦t⟧(z) + Complex.log ⟦s⟧(z) + (-1) from by ring]
+  rw [Complex.exp_add]
+  -- goal: exp(log t + log s) * exp(-1) = t * s / exp 1
+  rw [Complex.exp_add, Complex.exp_log ht, Complex.exp_log hs]
+  -- goal: t * s * exp(-1) = t * s / exp 1
+  rw [show (-1 : ℂ) = -(1 : ℂ) from by norm_num, Complex.exp_neg]
+  ring
+
 -- ============================================================
 -- §8. TESTIGOS DE LA CADENA DE BOOTSTRAPPING
 -- ============================================================

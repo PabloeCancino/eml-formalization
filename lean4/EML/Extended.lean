@@ -390,44 +390,30 @@ theorem ceval_tExp (t : EMLTermV) (z : ℂ) :
 
 -- R2: ceval de tLog coincide con Complex.log, CON condición de rama.
 -- En ℂ, Complex.log (Complex.exp w) = w solo si -π < w.im ≤ π.
--- Esto es la misma condición que EMLTerm.eval_tLog.
+-- Requerimos hbr_w como hipótesis explícita (w = exp 1 - log ⟦t⟧ℂ(z)).
+-- hne y hbr son semánticas: documentan precondiciones para el llamador.
+set_option linter.unusedVariables false in
 theorem ceval_tLog (t : EMLTermV) (z : ℂ)
-    (hne  : ⟦t⟧ℂ(z) ≠ 0)
-    (hbr  : (Complex.log (⟦t⟧ℂ(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
+    (hne   : ⟦t⟧ℂ(z) ≠ 0)
+    (hbr   : (Complex.log (⟦t⟧ℂ(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_w : -Real.pi < (Complex.exp 1 - Complex.log (⟦t⟧ℂ(z))).im ∧
+              (Complex.exp 1 - Complex.log (⟦t⟧ℂ(z))).im ≤ Real.pi) :
     ⟦tLog t⟧ℂ(z) = Complex.log (⟦t⟧ℂ(z)) := by
-  simp only [tLog, ceval_app, ceval_one]
-  -- goal: exp 1 - log(exp(exp 1 - log(⟦t⟧ℂ(z))) - log 1) = log(⟦t⟧ℂ(z))
-  simp only [Complex.log_one, sub_zero]
-  -- goal: exp 1 - log(exp(exp 1 - log(⟦t⟧ℂ(z)))) = log(⟦t⟧ℂ(z))
-  -- Usamos: let w := exp 1 - log(⟦t⟧ℂ(z)); log(exp w) = w si -π < w.im ≤ π
-  -- y luego: exp 1 - w = exp 1 - (exp 1 - log(⟦t⟧ℂ(z))) = log(⟦t⟧ℂ(z))
+  simp only [tLog, ceval_app, ceval_one, Complex.log_one, sub_zero]
+  -- goal: exp 1 - log(exp(exp 1 - log ⟦t⟧ℂ(z))) = log ⟦t⟧ℂ(z)
   set w := Complex.exp 1 - Complex.log (⟦t⟧ℂ(z)) with hw_def
-  -- Necesitamos: Complex.log (Complex.exp w) = w
-  -- Condición suficiente: -π < w.im ≤ π
-  -- w.im = (exp 1).im - (log(⟦t⟧ℂ(z))).im = Real.sin 1 - hbr
-  -- Esta condición depende de hbr, así que la requerimos como hipótesis adicional
-  by_cases hbr_w : -Real.pi < w.im ∧ w.im ≤ Real.pi
-  · rw [Complex.log_exp hbr_w.1 hbr_w.2, hw_def]
-    ring
-  · -- Caso donde la condición de rama falla: usamos sorry con documentación
-    -- Esto solo ocurre cuando sin(1) - hbr.im está fuera de (-π, π]
-    -- En la práctica (hbr ∈ Ioo(-π,π)), Real.sin 1 ≈ 0.84, así que
-    -- w.im = sin(1) - hbr.im ∈ (sin(1)-π, sin(1)+π) ≈ (-2.30, 3.98)
-    -- lo que puede exceder π. Este borde requiere hipótesis adicional.
-    exfalso
-    exact hne (by
-      push_neg at hbr_w
-      -- La demostración completa requiere razonamiento sobre sin(1)
-      sorry)
+  obtain ⟨h1, h2⟩ := hbr_w
+  rw [Complex.log_exp h1 h2, hw_def]
+  ring
 
--- Caso especial tLog var: instancia directa de ceval_tLog con t = var
+-- Caso especial tLog var: instancia directa con t = var.
 theorem ceval_tLog_var (z : ℂ)
     (hne   : z ≠ 0)
     (hbr   : (Complex.log z).im ∈ Set.Ioo (-Real.pi) Real.pi)
     (hbr_w : -Real.pi < (Complex.exp 1 - Complex.log z).im ∧
               (Complex.exp 1 - Complex.log z).im ≤ Real.pi) :
     ⟦tLog var⟧ℂ(z) = Complex.log z :=
-  ceval_tLog var z (by simpa using hne) (by simpa using hbr) (by simpa using hbr_w)
+  ceval_tLog var z (by simpa) (by simpa) hbr_w
 
 
 
@@ -461,7 +447,155 @@ theorem elementary_log_V :
     IsLiouvilleElementaryComplexV (fun z => Complex.log z) := elementary_log_V_ax
 
 -- ============================================================
--- §13. COERCIÓN EMLTerm → EMLTermV
+-- §13. LEMAS ceval EN ℂ PARA OPERACIONES ARITMÉTICAS
+-- ============================================================
+--
+-- En ℂ, Complex.log 0 = 0 (convenio Mathlib, ≠ EReal donde emlLog 0 = ⊥).
+-- Por eso tMinusV en ℂ da 1 - t (no -t), igual que tMinus en Basic.lean.
+-- Los offsets son: tPlusV → t+s-1, tInvV → e/t, tTimesV → t·s/e.
+
+-- (Complex.exp 1).im = 0, porque 1 : ℂ = (1 : ℝ) : ℂ (parte imaginaria 0).
+-- Por tanto Complex.exp 1 = Real.exp 1 + 0·i, cuya parte imaginaria es 0.
+-- Los bounds -π < 0 ≤ π son triviales.
+private theorem exp_one_im_bounds :
+    -Real.pi < (Complex.exp 1).im ∧ (Complex.exp 1).im ≤ Real.pi := by
+  have him : (Complex.exp 1).im = 0 := by
+    have : (1 : ℂ) = ((1 : ℝ) : ℂ) := by norm_cast
+    rw [this, Complex.exp_ofReal_im]
+  rw [him]
+  exact ⟨by linarith [Real.pi_pos], Real.pi_pos.le⟩
+
+-- Lema auxiliar: ceval (tLog one) z = 0 (incondicional)
+private theorem ceval_tLog_one (z : ℂ) : ⟦tLog one⟧ℂ(z) = 0 := by
+  have hbr := exp_one_im_bounds
+  have : ⟦tLog one⟧ℂ(z) = Complex.log (⟦one⟧ℂ(z)) :=
+    ceval_tLog one z
+      (by simp)
+      (by simp [Complex.log_one, Set.mem_Ioo, Real.pi_pos, neg_lt_self Real.pi_pos])
+      (by simp [Complex.log_one]; exact hbr)
+  simp [this]
+
+-- En ℂ, ceval (tLog (tLog one)) z = 0.
+-- BLOQUEADOR: ⟦tLog one⟧ℂ(z) = 0 rompe la hipotesis hne de ceval_tLog.
+-- La prueba directa requiere expandir ceval manualmente y aplicar log_zero.
+-- SORRY HONESTO: pendiente de prueba directa vía expand_ceval.
+--
+-- La traza correcta es:
+-- ⟦tLog (tLog one)⟧ℂ(z)
+-- = exp(1) - log(exp(exp(1) - log(exp(exp(1)) - log(1))) - log(1))
+-- = exp(1) - log(exp(exp(1) - log(exp(exp(1)))) - 0)
+-- = exp(1) - log(exp(exp(1) - exp(1)))   [log_exp hbr]
+-- = exp(1) - log(exp(0)) = exp(1) - log(1) = exp(1) - 0 = exp(1) ???
+-- NECESITA REVERIFICACIÓN DE LA TRAZA
+private theorem ceval_tLog_tLog_one (z : ℂ) : ⟦tLog (tLog one)⟧ℂ(z) = 0 := by
+  have hbr := exp_one_im_bounds
+  -- Expand tLog (tLog one) manually to get ⟦tLog one⟧ in the expression
+  have hexp : ⟦tLog (tLog one)⟧ℂ(z) =
+    Complex.exp 1 - Complex.log (Complex.exp (Complex.exp 1 - Complex.log (⟦tLog one⟧ℂ(z)))) := by
+    simp only [tLog, ceval_app, ceval_one, Complex.log_one, sub_zero]
+  rw [hexp, ceval_tLog_one]
+  simp only [Complex.log_zero, sub_zero]
+  rw [Complex.log_exp hbr.1 hbr.2]
+  simp
+
+
+/-- En ℂ, ceval de tMinusV da `1 - ⟦t⟧ℂ(z)` (igual que eval_tMinus en Basic.lean). -/
+theorem ceval_tMinusV (t : EMLTermV) (z : ℂ)
+    (hbr_t : (⟦t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    ⟦tMinusV t⟧ℂ(z) = 1 - ⟦t⟧ℂ(z) := by
+  simp only [tMinusV, ceval_app, ceval_tExp]
+  rw [ceval_tLog_tLog_one]
+  simp only [Complex.exp_zero]
+  obtain ⟨h1, h2⟩ := Set.mem_Ioc.mp hbr_t
+  rw [Complex.log_exp h1 h2]
+
+/-- ceval de tPlusV en ℂ: da `⟦t⟧ℂ(z) + ⟦s⟧ℂ(z) - 1` (mismo que eval_tPlus en Basic.lean). -/
+theorem ceval_tPlusV (t s : EMLTermV) (z : ℂ)
+    (hne_t   : ⟦t⟧ℂ(z) ≠ 0)
+    (hbr_t   : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_tw  : -Real.pi < (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ∧
+                (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ≤ Real.pi)
+    (hbr_s   : (⟦s⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbr_ms  : (1 - ⟦s⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    ⟦tPlusV t s⟧ℂ(z) = ⟦t⟧ℂ(z) + ⟦s⟧ℂ(z) - 1 := by
+  simp only [tPlusV, tSubtractV, ceval_app]
+  rw [ceval_tLog t z hne_t hbr_t hbr_tw, ceval_tExp, ceval_tMinusV s z hbr_s]
+  rw [Complex.exp_log hne_t]
+  obtain ⟨h1, h2⟩ := hbr_ms
+  rw [Complex.log_exp h1 h2]
+  ring
+
+/-- ceval de tInvV en ℂ: da `Complex.exp 1 / ⟦t⟧ℂ(z)` (mismo que eval_tInv en Basic.lean). -/
+theorem ceval_tInvV (t : EMLTermV) (z : ℂ)
+    (hne_t   : ⟦t⟧ℂ(z) ≠ 0)
+    (hbr_t   : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_tw  : -Real.pi < (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ∧
+                (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ≤ Real.pi)
+    (hbr_lt  : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbr_mlt : (1 - Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    ⟦tInvV t⟧ℂ(z) = Complex.exp 1 / ⟦t⟧ℂ(z) := by
+  simp only [tInvV, ceval_tExp]
+  have htlog : ⟦tLog t⟧ℂ(z) = Complex.log (⟦t⟧ℂ(z)) :=
+    ceval_tLog t z hne_t hbr_t hbr_tw
+  have hbr_lt' : (⟦tLog t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi := htlog ▸ hbr_lt
+  rw [ceval_tMinusV (tLog t) z hbr_lt', htlog]
+  rw [Complex.exp_sub, Complex.exp_log hne_t]
+
+-- ============================================================
+-- §14. CERRADURA DE IsLiouvilleElementaryComplexV
+-- ============================================================
+--
+-- Versiones V de los teoremas de cierre de Liouville.lean §9.
+-- Los mismos offsets semánticos: suma → φ+ψ-1, producto → φψ/e, inv → e/φ.
+
+/-- Suma de funciones elementales-V es elemental-V.
+    Resultado: `φ z + ψ z - 1` (mismo offset que `elementary_sum` en Liouville.lean). -/
+theorem elementary_sum_V (φ ψ : ℂ → ℂ)
+    (hφ    : IsLiouvilleElementaryComplexV φ)
+    (hψ    : IsLiouvilleElementaryComplexV ψ)
+    (hφne  : ∀ z, φ z ≠ 0)
+    (hbr_t : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_tw: ∀ z, -Real.pi < (Complex.exp 1 - Complex.log (φ z)).im ∧
+                              (Complex.exp 1 - Complex.log (φ z)).im ≤ Real.pi)
+    (hbr_s : ∀ z, (ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbr_ms: ∀ z, (1 - ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    IsLiouvilleElementaryComplexV (fun z => φ z + ψ z - 1) := by
+  obtain ⟨tφ, hφeq⟩ := hφ
+  obtain ⟨tψ, hψeq⟩ := hψ
+  exact ⟨tPlusV tφ tψ, fun z => by
+    simp only []
+    rw [ceval_tPlusV tφ tψ z
+      (hφeq z ▸ hφne z)
+      (hφeq z ▸ hbr_t z)
+      (hφeq z ▸ hbr_tw z)
+      (hψeq z ▸ hbr_s z)
+      (hψeq z ▸ hbr_ms z)]
+    rw [hφeq, hψeq]⟩
+
+/-- Inverso de función elemental-V es elemental-V.
+    Resultado: `exp(1) / φ z` (mismo resultado que `elementary_inverse` en Liouville.lean). -/
+theorem elementary_inverse_V (φ : ℂ → ℂ)
+    (hφ     : IsLiouvilleElementaryComplexV φ)
+    (hφne   : ∀ z, φ z ≠ 0)
+    (hbr_t  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_tw : ∀ z, -Real.pi < (Complex.exp 1 - Complex.log (φ z)).im ∧
+                               (Complex.exp 1 - Complex.log (φ z)).im ≤ Real.pi)
+    (hbr_lt : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbr_ml : ∀ z, (1 - Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    IsLiouvilleElementaryComplexV (fun z => Complex.exp 1 / φ z) := by
+  obtain ⟨tφ, hφeq⟩ := hφ
+  exact ⟨tInvV tφ, fun z => by
+    simp only []
+    rw [ceval_tInvV tφ z
+      (hφeq z ▸ hφne z)
+      (hφeq z ▸ hbr_t z)
+      (hφeq z ▸ hbr_tw z)
+      (hφeq z ▸ hbr_lt z)
+      (hφeq z ▸ hbr_ml z)]
+    rw [hφeq]⟩
+
+-- ============================================================
+-- §15. COERCIÓN EMLTerm → EMLTermV
 -- ============================================================
 
 end EMLTermV

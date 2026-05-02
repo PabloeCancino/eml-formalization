@@ -1,11 +1,12 @@
 -- EML.lean — Punto de entrada de la librería EML
--- Reexporta todos los módulos del proyecto
+-- Módulos estables: Basic, TRS, Real, Extended
+-- Módulos con APIs pendientes de v4.29.0: CurryHoward, Expressivity, Liouville, Completeness
 
 import EML.Basic
 import EML.TRS
 import EML.Real
-import EML.Liouville
-import EML.Completeness
-import EML.CurryHoward
-import EML.Expressivity
 import EML.Extended
+-- import EML.CurryHoward   -- TODO: tipo mismatch en ereval/EReal conversions
+-- import EML.Expressivity   -- TODO: Real.erf / Nat.primeCounting API cambiada
+-- import EML.Liouville      -- TODO: depende de Expressivity
+-- import EML.Completeness   -- TODO: depende de Liouville

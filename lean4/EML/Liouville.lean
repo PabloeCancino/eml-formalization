@@ -157,9 +157,8 @@ def isSubTower (L L' : LiouvilleTower) : Prop :=
 /-- La relación de extensión es reflexiva. -/
 theorem isSubTower_refl (L : LiouvilleTower) : L.isSubTower L :=
   ⟨Nat.le_refl _, fun i => by
-    -- castLE (le_refl n) i = i  por Fin.ext rfl
-    congr 1
-    exact Fin.castLE_refl_eq _ i⟩
+    -- castLE (le_refl n) i = i  por Fin.ext rfl; congr 1 cierra el goal
+    congr 1⟩
 
 /-- La relación de extensión es transitiva.
 
@@ -171,8 +170,8 @@ theorem isSubTower_refl (L : LiouvilleTower) : L.isSubTower L :=
         = L₃.steps ((i.castLE h₁₂).castLE h₂₃)  (por h₂₃_steps)
         = L₃.steps (i.castLE (h₁₂.trans h₂₃))   (por Fin.castLE_castLE_eq)  -/
 theorem extends_trans (L₁ L₂ L₃ : LiouvilleTower)
-    (h₁₂ : L₁.extends L₂) (h₂₃ : L₂.extends L₃) :
-    L₁.extends L₃ := by
+    (h₁₂ : L₁.isSubTower L₂) (h₂₃ : L₂.isSubTower L₃) :
+    L₁.isSubTower L₃ := by
   obtain ⟨h12, steps12⟩ := h₁₂
   obtain ⟨h23, steps23⟩ := h₂₃
   refine ⟨Nat.le_trans h12 h23, fun i => ?_⟩
@@ -181,8 +180,8 @@ theorem extends_trans (L₁ L₂ L₃ : LiouvilleTower)
   -- Paso 2: L₂.steps (i.castLE h12) = L₃.steps ((i.castLE h12).castLE h23)
   rw [steps23 (i.castLE h12)]
   -- Paso 3: (i.castLE h12).castLE h23 = i.castLE (h12.trans h23)
+  -- congr 1 cierra por igualdad definitional (ambos tienen .val = i.val)
   congr 1
-  exact Fin.castLE_castLE_eq h12 h23 i
 
 end LiouvilleTower
 
@@ -201,10 +200,12 @@ end LiouvilleTower
 --   K_EML = 6 → nivel 3  (arctan, arcsin, sinh, cosh, x^x)
 --   K_EML = ∞ → fuera de toda torre finita (erf, Ei, ζ, Γ)
 
+set_option linter.unusedVariables false in
 /-- El nivel mínimo en la Torre de Liouville de una función elemental,
     codificado como el número mínimo de extensiones necesarias. -/
 noncomputable def liouville_level_of (φ : ℂ → ℂ) : ℕ := 0
   -- placeholder: valor real requiere inducción formal sobre la Torre de Liouville
+  -- (φ se conserva como parámetro para extensiones futuras del proyecto)
 
 -- Lemas de nivel para funciones canónicas
 
@@ -224,6 +225,7 @@ theorem level_const_one : liouville_level_of (fun _ => (1 : ℂ)) = 0 := by
 -- Estos son exactamente los generadores del operador EML:
 --   f(x,y) = exp(x) - log(y)  genera (i), (ii), (iii) por bootstrapping.
 
+set_option linter.unusedVariables false in
 /-- Cerradura bajo exp: si φ tiene nivel n, entonces exp∘φ tiene nivel ≤ n+1. -/
 theorem tower_closed_exp (n : ℕ) (φ : ℂ → ℂ)
     (hφ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = φ z) :
@@ -233,14 +235,17 @@ theorem tower_closed_exp (n : ℕ) (φ : ℂ → ℂ)
     simp [EMLTerm.eval_tExp]
     rw [ht]⟩
 
-/-- Cerradura bajo log: si φ tiene nivel n, entonces log∘φ tiene nivel ≤ n+1. -/
+set_option linter.unusedVariables false in
+/-- Cerradura bajo log: si φ tiene nivel n, entonces log∘φ tiene nivel ≤ n+1.
+    Nota: eval_tLog es condicional (requiere φ z ≠ 0 y condición de rama),
+    por lo que la prueba general requiere hilar esas condiciones como hipótesis. -/
 theorem tower_closed_log (n : ℕ) (φ : ℂ → ℂ)
     (hφ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = φ z) :
     ∃ t' : EMLTerm, ∀ z : ℂ, EMLTerm.eval t' z = Complex.log (φ z) := by
   obtain ⟨t, ht⟩ := hφ
   exact ⟨EMLTerm.tLog t, fun z => by
-    simp [EMLTerm.eval_tLog]
-    rw [ht]⟩
+    -- eval_tLog requiere condiciones de rama; se posterga la prueba completa
+    sorry⟩
 
 /-- Cerradura bajo resta (= f directo): testigo explícito via app. -/
 theorem tower_closed_subtract (φ ψ : ℂ → ℂ)
@@ -304,16 +309,16 @@ theorem elementary_complex_one :
   ⟨EMLTerm.one, fun z => by simp [EMLTerm.eval]⟩
 
 -- La función exp es elemental
+-- (sorry: EMLTerm carece de átomo `var`; el testigo exacto requiere EMLTermV)
 theorem elementary_complex_exp :
-    IsLiouvilleElementaryComplex (fun z => Complex.exp z) :=
-  ⟨EMLTerm.tExp EMLTerm.one, fun z => by
-    simp [EMLTerm.eval_tExp, EMLTerm.eval_one]⟩
+    IsLiouvilleElementaryComplex (fun z => Complex.exp z) := by
+  sorry
 
 -- La función log es elemental
+-- (sorry: EMLTerm carece de átomo `var`; el testigo exacto requiere EMLTermV)
 theorem elementary_complex_log :
-    IsLiouvilleElementaryComplex (fun z => Complex.log z) :=
-  ⟨EMLTerm.tLog EMLTerm.one, fun z => by
-    simp [EMLTerm.eval_tLog, EMLTerm.eval_one]⟩
+    IsLiouvilleElementaryComplex (fun z => Complex.log z) := by
+  sorry
 
 -- Las funciones elementales son cerradas bajo composición EML
 theorem elementary_complex_closed_f
@@ -351,13 +356,12 @@ theorem elementary_complex_closed_f
     demostrar el word problem. -/
 axiom schanuel_two (z₁ z₂ : ℂ)
     (h_indep : ∀ (q₁ q₂ : ℚ), (q₁ : ℂ) * z₁ + (q₂ : ℂ) * z₂ = 0 → q₁ = 0 ∧ q₂ = 0) :
-    ∀ (P : ℂ[X][X]), True  -- placeholder del enunciado completo
+    True  -- placeholder: grado de trascendencia ≥ 2 (no disponible en Mathlib)
 
 /-- Consecuencia de Schanuel: e y π son algebraicamente independientes sobre ℚ.
-    (Esta es una consecuencia estándar de la Conjetura de Schanuel.) -/
-theorem schanuel_e_pi_indep :
-    ∀ (P : ℤ[X][X]), True := by  -- placeholder
-  intro _; trivial
+    (Esta es una consecuencia estándar de la Conjetura de Schanuel.)
+    placeholder: Polynomial.aeval requiere más estructura de transcendencia. -/
+theorem schanuel_e_pi_indep : True := trivial
 
 /-- Bajo el axioma de Schanuel, el word problem de EML es decidible
     en el sentido de que dos árboles EML con la misma evaluación
@@ -434,9 +438,10 @@ theorem elementary_sum (φ ψ : ℂ → ℂ)
     IsLiouvilleElementaryComplex (fun z => φ z + ψ z) := by
   obtain ⟨tφ, hφeq⟩ := hφ
   obtain ⟨tψ, hψeq⟩ := hψ
-  -- Usar tPlus de Basic.lean: tPlus t s representa φ + ψ
+  -- tPlus tφ tψ = tSubtract tφ (tMinus tψ); semántica condicional (rama de log)
   exact ⟨EMLTerm.tPlus tφ tψ, fun z => by
-    simp [EMLTerm.eval_tPlus, hφeq, hψeq]⟩
+    -- eval_tPlus aún no existe como lema @[simp] en Basic.lean; pendiente
+    sorry⟩
 
 /-- Producto de funciones elementales es elemental. -/
 theorem elementary_product (φ ψ : ℂ → ℂ)
@@ -446,7 +451,8 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
   obtain ⟨tφ, hφeq⟩ := hφ
   obtain ⟨tψ, hψeq⟩ := hψ
   exact ⟨EMLTerm.tTimes tφ tψ, fun z => by
-    simp [EMLTerm.eval_tTimes, hφeq, hψeq]⟩
+    -- eval_tTimes aún no existe como lema @[simp] en Basic.lean; pendiente
+    sorry⟩
 
 /-- Inverso de función elemental (con valor ≠ 0) es elemental. -/
 theorem elementary_inverse (φ : ℂ → ℂ)
@@ -454,7 +460,8 @@ theorem elementary_inverse (φ : ℂ → ℂ)
     IsLiouvilleElementaryComplex (fun z => (φ z)⁻¹) := by
   obtain ⟨tφ, hφeq⟩ := hφ
   exact ⟨EMLTerm.tInv tφ, fun z => by
-    simp [EMLTerm.eval_tInv, hφeq]⟩
+    -- eval_tInv aún no existe como lema @[simp] en Basic.lean; pendiente
+    sorry⟩
 
 -- ============================================================
 -- §10. RESUMEN: TABLA DE LA TORRE DE LIOUVILLE EN LEAN 4

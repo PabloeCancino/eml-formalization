@@ -37,7 +37,7 @@ namespace EMLTerm
 -- Esta totalidad es lo que permite evitar hipótesis de rama.
 
 /-- Evaluación real de un término EML en z : ℝ. -/
-def reval (t : EMLTerm) (z : ℝ) : ℝ :=
+noncomputable def reval (t : EMLTerm) (z : ℝ) : ℝ :=
   match t with
   | one       => 1
   | app t' s' => Real.exp (reval t' z) - Real.log (reval s' z)
@@ -156,8 +156,8 @@ theorem reval_tSubtract (t s : EMLTerm) (z : ℝ)
     tMinus evalúa a `1 − x`, no a `−x`. -/
 theorem reval_tMinus_is_one_sub (x : EMLTerm) (z : ℝ) :
     ⟦tMinus x⟧ᵣ(z) = 1 - ⟦x⟧ᵣ(z) := by
-  simp only [tMinus, reval_app]
-  rw [reval_tLog, reval_one, Real.log_one, reval_tExp, Real.log_exp]
+  simp only [tMinus, reval_app, reval_tLog, reval_one, Real.log_one,
+             reval_tExp, Real.log_exp, Real.exp_zero]
 
 -- Consecuencia: la semántica de tSubtract, tPlus, tTimes, etc.
 -- sobre ℝ difiere de la semántica matemática EML cuando las
@@ -180,9 +180,9 @@ theorem reval_tMinus_is_one_sub (x : EMLTerm) (z : ℝ) :
 
 -- Complejidades verificadas sin evaluación:
 theorem k_tExp_one : K[tExp one] = 2 := by simp [tExp, complexity]
-theorem k_tLog_one : K[tLog one] = 4 := by simp [tLog, complexity]; ring
+theorem k_tLog_one : K[tLog one] = 4 := by simp [tLog, complexity]
 theorem k_tLog_tLog_one : K[tLog (tLog one)] = 7 := by
-  simp [tLog, complexity]; ring
+  simp [tLog, complexity]
 
 -- ============================================================
 -- §7. COMPOSICIÓN: TESTIGO PARA exp ∘ f Y log ∘ f

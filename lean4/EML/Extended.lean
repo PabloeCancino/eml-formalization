@@ -32,7 +32,7 @@
 -- se prueba por casos (⊥, ⊤, coe r), aislada en `ereal_shift_cancel`.
 -- ============================================================
 
-import Mathlib.Topology.Algebra.Order.EReal
+import Mathlib.Topology.Instances.EReal
 import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import EML.Basic
 import Mathlib.Tactic

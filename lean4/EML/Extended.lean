@@ -65,23 +65,20 @@ noncomputable def emlLog : EReal → EReal
 theorem emlExp_pos (x : EReal) : 0 < emlExp x ∨ emlExp x = 0 := by
   induction x using EReal.rec with
   | bot => right; simp
-  | top => left; simp [emlExp_top]  -- EReal.top_pos renamed in v4.29.0
+  | top => left; simp
   | coe r => left; simp [emlExp_real]; exact_mod_cast Real.exp_pos r
 
 @[simp] theorem emlLog_bot : emlLog ⊥ = ⊥ := rfl
 @[simp] theorem emlLog_top : emlLog ⊤ = ⊤ := rfl
 
--- NOTE: emlLog_real_pos and emlLog_zero fail in v4.29.0 because
--- simp only [emlLog] exposes the WithBot(WithTop ℝ) match which
--- split_ifs cannot reduce. The math is correct.
 theorem emlLog_real_pos {r : ℝ} (hr : 0 < r) :
     emlLog (r : EReal) = (Real.log r : ℝ) := by
   change (if r ≤ 0 then (⊥ : EReal) else ↑(Real.log r)) = ↑(Real.log r)
-  simp [not_le.mpr hr]
+  exact if_neg (not_le.mpr hr)
 
 @[simp] theorem emlLog_zero : emlLog (0 : EReal) = ⊥ := by
   change (if (0:Real) ≤ 0 then (⊥ : EReal) else ↑(Real.log 0)) = ⊥
-  simp
+  exact if_pos le_rfl
 
 @[simp] theorem emlLog_one : emlLog (1 : EReal) = 0 := by
   have : (1 : EReal) = ((1 : ℝ) : EReal) := by norm_cast
@@ -100,10 +97,11 @@ theorem emlLog_emlExp : ∀ x : EReal, emlLog (emlExp x) = x := by
 /-- exp(log(x)) = x cuando x > 0 y x ≠ ⊤. -/
 theorem emlExp_emlLog_pos {x : EReal} (hpos : 0 < x) (htop : x ≠ ⊤) :
     emlExp (emlLog x) = x := by
-  rcases x with _ | _ | r
-  · exact absurd hpos (by simp)  -- ⊥ case: 0 < ⊥ is False
-  · exact absurd rfl htop          -- ⊤ case: ⊤ ≠ ⊤ is False
-  · have hr : 0 < r := by exact_mod_cast hpos
+  induction x using EReal.rec with
+  | bot => exact absurd hpos (by simp)
+  | top => exact absurd rfl htop
+  | coe r =>
+    have hr : 0 < r := by exact_mod_cast hpos
     simp [emlLog_real_pos hr, Real.exp_log hr]
 
 /-- exp(log(x)) = x cuando x ≥ 0 en EReal.
@@ -220,7 +218,6 @@ theorem ereval_tLog (t : EMLTermV) (z : EReal) :
   norm_cast
   simp only [emlLog_one, neg_zero, add_zero, emlLog_emlExp]
   have hsc := ereal_shift_cancel (Real.exp 1) (emlLog (⟦t⟧ₑ(z)))
-  simp only [emlExp_real] at hsc
   exact hsc
 
 -- ============================================================

@@ -137,16 +137,10 @@ theorem emlExp_emlLog_nonneg {x : EReal} (hx : 0 ≤ x) :
 lemma ereal_shift_cancel (e : ℝ) (x : EReal) :
     (e : EReal) + -((e : EReal) + (-x)) = x := by
   induction x using EReal.rec with
-  | bot =>
-    -- x = ⊥: -x = ⊤, e + ⊤ = ⊤, -(⊤) = ⊥, e + ⊥ = ⊥ = x ✓
-    simp only [EReal.neg_bot, EReal.coe_add_top, EReal.neg_top, EReal.coe_add_bot]
-  | top =>
-    -- x = ⊤: -x = ⊥, e + ⊥ = ⊥, -(⊥) = ⊤, e + ⊤ = ⊤ = x ✓
-    simp only [EReal.neg_top, EReal.coe_add_bot, EReal.neg_bot, EReal.coe_add_top]
+  | bot => simp
+  | top => simp
   | coe r =>
-    -- x = (r : ℝ): standard ring arithmetic in ℝ, coerced
-    push_cast
-    ring
+    push_cast; ring
 
 -- ============================================================
 -- §4. TIPO EMLTermV (GRAMÁTICA CON VARIABLE)
@@ -200,7 +194,9 @@ notation "⟦" t "⟧ₑ(" z ")" => EMLTermV.ereval t z
 -- R1: ⟦tExp t⟧ₑ(z) = emlExp(⟦t⟧ₑ(z))
 theorem ereval_tExp (t : EMLTermV) (z : EReal) :
     ⟦tExp t⟧ₑ(z) = emlExp (⟦t⟧ₑ(z)) := by
-  simp only [tExp, ereval_app, ereval_one, emlLog_one, neg_zero, add_zero]
+  simp only [tExp, ereval_app, ereval_one]
+  norm_cast
+  simp [emlLog_one]
 
 -- R2: ⟦tLog t⟧ₑ(z) = emlLog(⟦t⟧ₑ(z))  — INCONDICIONAL en EReal
 -- Prueba: usa emlLog_emlExp y ereal_shift_cancel.
@@ -245,7 +241,7 @@ theorem ereval_tMinusV (x : EMLTermV) (z : EReal) :
     ⟦tMinusV x⟧ₑ(z) = -⟦x⟧ₑ(z) := by
   simp only [tMinusV, ereval_app, ereval_tLog, ereval_tExp, ereval_one]
   norm_cast
-  simp only [emlLog_one, emlLog_zero, emlExp_bot, zero_add, emlLog_emlExp]
+  simp [emlLog_one, emlLog_zero, emlExp_bot, emlLog_emlExp]
 
 -- Casos especiales verificados:
 

@@ -396,15 +396,11 @@ theorem trsDown_not_confluent :
     ¬ ∀ (z : ℂ), Complex.exp (Complex.exp 1 - Complex.log z) =
                   Complex.log z := by
   intro h
-  have h1 := h (Real.exp 1)
-  simp only [Complex.ofReal_exp] at h1
-  simp only [Complex.ofReal_one] at h1
-  simp at h1
-  have : Complex.exp (Complex.exp 1 - 1) ≠ 1 := by
-    intro heq
-    have := Complex.exp_eq_one_iff.mp heq
-    simp at this
-  exact this h1
+  -- Evaluar en z = 1: log(1) = 0, luego exp(exp(1)) = 0
+  have h1 := h 1
+  simp only [Complex.log_one, sub_zero] at h1
+  -- h1 : Complex.exp (Complex.exp 1) = 0
+  exact Complex.exp_ne_zero _ h1
 
 -- ============================================================
 -- §8. EQUIVALENCIA SEMÁNTICA (WORD PROBLEM)

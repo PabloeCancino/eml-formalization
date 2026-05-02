@@ -308,7 +308,9 @@ theorem ereval_tInvV_real (t : EMLTermV) (z : EReal) (r : ℝ)
     (hr : 0 < r) (heq : ⟦t⟧ₑ(z) = (r : EReal)) :
     ⟦tInvV t⟧ₑ(z) = ((r⁻¹ : ℝ) : EReal) := by
   rw [ereval_tInvV, heq, emlLog_real_pos hr]
-  rw [show -(Real.log r : EReal) = ((- Real.log r : ℝ) : EReal) by push_cast; ring]
+  norm_cast
+  rw [show -(Real.log r : EReal) = ((- Real.log r : ℝ) : EReal) from
+        (EReal.coe_neg _).symm]
   rw [emlExp_real]
   norm_cast
   rw [← Real.log_inv, Real.exp_log (inv_pos.mpr hr)]
@@ -326,8 +328,10 @@ theorem ereval_tTimesV_real (t s : EMLTermV) (z : EReal) (r₁ r₂ : ℝ)
     exact_mod_cast Real.log_nonneg hr₁
   rw [ereval_tPlusV _ _ _ hlog, ereval_tLog, ereval_tLog, h₁, h₂,
       emlLog_real_pos hr₁_pos, emlLog_real_pos hr₂]
+  norm_cast
   rw [show (Real.log r₁ : EReal) + (Real.log r₂ : EReal) =
-          ((Real.log r₁ + Real.log r₂ : ℝ) : EReal) by push_cast; ring]
+          ((Real.log r₁ + Real.log r₂ : ℝ) : EReal) from by
+        exact_mod_cast (EReal.coe_add _ _).symm]
   rw [emlExp_real]
   norm_cast
   rw [← Real.log_mul hr₁_pos.ne' hr₂.ne', Real.exp_log (mul_pos hr₁_pos hr₂)]

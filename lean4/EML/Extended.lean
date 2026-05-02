@@ -207,11 +207,9 @@ theorem ereval_tExp (t : EMLTermV) (z : EReal) :
 theorem ereval_tLog (t : EMLTermV) (z : EReal) :
     ⟦tLog t⟧ₑ(z) = emlLog (⟦t⟧ₑ(z)) := by
   simp only [tLog, ereval_app, ereval_one]
-  -- Simplificar emlLog(1) = 0 con simp (maneja coerciones en (1:EReal))
-  simp only [emlLog_one, neg_zero, add_zero]
-  -- emlLog_emlExp: log(exp(x)) = x
-  rw [emlLog_emlExp]
-  -- Aplicar ereal_shift_cancel con e = Real.exp 1
+  -- norm_cast normaliza ↑(1:ℝ) a (1:EReal) para que emlLog_one dispare
+  norm_cast
+  simp only [emlLog_one, neg_zero, add_zero, emlLog_emlExp]
   have hsc := ereal_shift_cancel (Real.exp 1) (emlLog (⟦t⟧ₑ(z)))
   simp only [emlExp_real] at hsc
   exact hsc
@@ -245,8 +243,9 @@ def tMinusV (x : EMLTermV) : EMLTermV :=
     Demuestra que Minus(x) = −x se formaliza con log(0) = ⊥. -/
 theorem ereval_tMinusV (x : EMLTermV) (z : EReal) :
     ⟦tMinusV x⟧ₑ(z) = -⟦x⟧ₑ(z) := by
-  simp only [tMinusV, ereval_app, ereval_tLog, ereval_tExp, ereval_one,
-             emlLog_one, emlLog_zero, emlExp_bot, zero_add]
+  simp only [tMinusV, ereval_app, ereval_tLog, ereval_tExp, ereval_one]
+  norm_cast
+  simp only [emlLog_one, emlLog_zero, emlExp_bot, zero_add, emlLog_emlExp]
 
 -- Casos especiales verificados:
 
@@ -309,8 +308,6 @@ theorem ereval_tInvV_real (t : EMLTermV) (z : EReal) (r : ℝ)
     ⟦tInvV t⟧ₑ(z) = ((r⁻¹ : ℝ) : EReal) := by
   rw [ereval_tInvV, heq, emlLog_real_pos hr]
   norm_cast
-  rw [show -(Real.log r : EReal) = ((- Real.log r : ℝ) : EReal) from
-        (EReal.coe_neg _).symm]
   rw [emlExp_real]
   norm_cast
   rw [← Real.log_inv, Real.exp_log (inv_pos.mpr hr)]
@@ -329,9 +326,6 @@ theorem ereval_tTimesV_real (t s : EMLTermV) (z : EReal) (r₁ r₂ : ℝ)
   rw [ereval_tPlusV _ _ _ hlog, ereval_tLog, ereval_tLog, h₁, h₂,
       emlLog_real_pos hr₁_pos, emlLog_real_pos hr₂]
   norm_cast
-  rw [show (Real.log r₁ : EReal) + (Real.log r₂ : EReal) =
-          ((Real.log r₁ + Real.log r₂ : ℝ) : EReal) from by
-        exact_mod_cast (EReal.coe_add _ _).symm]
   rw [emlExp_real]
   norm_cast
   rw [← Real.log_mul hr₁_pos.ne' hr₂.ne', Real.exp_log (mul_pos hr₁_pos hr₂)]

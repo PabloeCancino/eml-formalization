@@ -78,10 +78,12 @@ theorem complexity_pos : ∀ t : EMLTerm, 0 < K[t] := by
 
 /-- La complejidad de un árbol compuesto estrictamente supera a cada parte. -/
 theorem complexity_app_lt_left (t s : EMLTerm) : K[t] < K[app t s] := by
-  simp [complexity]; exact Nat.lt_add_of_pos_right (complexity_pos s)
+  simp only [complexity_app_eq]
+  linarith [complexity_pos s]
 
 theorem complexity_app_lt_right (t s : EMLTerm) : K[s] < K[app t s] := by
-  simp [complexity]; exact Nat.lt_add_of_pos_left (complexity_pos t)
+  simp only [complexity_app_eq]
+  linarith [complexity_pos t]
 
 -- ============================================================
 -- §3. DEFINICIONES INTERMEDIAS (Árboles testigo)
@@ -209,13 +211,13 @@ theorem complexity_tLog (x : EMLTerm) : K[tLog x] = K[x] + 3 := by
   simp [tLog, complexity]; ring
 
 @[simp]
-theorem complexity_tMinus (x : EMLTerm) : K[tMinus x] = K[x] + 4 := by
-  simp [tMinus, complexity_tLog, complexity_tExp, complexity]
+theorem complexity_tMinus (x : EMLTerm) : K[tMinus x] = K[x] + 5 := by
+  simp [tMinus, complexity_tLog, complexity_tExp]; ring
 
 @[simp]
 theorem complexity_tSubtract (x y : EMLTerm) :
     K[tSubtract x y] = K[x] + K[y] + 4 := by
-  simp [tSubtract, complexity_tLog, complexity_tExp, complexity]; ring
+  simp [tSubtract, complexity_tLog, complexity_tExp]; ring
 
 -- Verificación: K(e) = 2
 theorem complexity_e : K[tExp one] = 2 := by simp [tExp, complexity]
@@ -235,14 +237,14 @@ theorem trs_Exp_terminates (x : EMLTerm) : K[x] < K[tExp x] := by
   simp [complexity_tExp]
 
 theorem trs_Log_terminates (x : EMLTerm) : K[x] < K[tLog x] := by
-  simp [complexity_tLog]; omega
+  simp only [complexity_tLog]; omega
 
 theorem trs_Minus_terminates (x : EMLTerm) : K[x] < K[tMinus x] := by
-  simp [complexity_tMinus]; omega
+  simp only [complexity_tMinus]; omega
 
 theorem trs_Subtract_terminates (x y : EMLTerm) :
     K[x] + K[y] < K[tSubtract x y] := by
-  simp [complexity_tSubtract]; omega
+  simp only [complexity_tSubtract]; omega
 
 /-- Teorema de terminación de TRS↑: la complejidad K crece estrictamente
     en toda expansión, garantizando que el proceso termina. -/
@@ -267,8 +269,8 @@ theorem trs_up_terminates :
 -- Aquí la enunciamos como proposición (la demostración detallada
 -- se encuentra en §6B del documento EML_Sistema_Reescritura.md).
 
-/-- El sistema de expansión TRS↑ es ortogonal, luego confluente.
-    (Proposición C1 de EML_Sistema_Reescritura.md) -/
+-- El sistema de expansión TRS↑ es ortogonal, luego confluente.
+-- (Proposición C1 de EML_Sistema_Reescritura.md)
 -- theorem trs_up_confluent : Confluent TRS_up := by
 --   apply confluent_of_orthogonal
 --   exact trs_up_orthogonal  -- los patrones son disjuntos
@@ -280,10 +282,9 @@ theorem trs_up_terminates :
 -- La valuación semántica asigna a cada árbol EMLTerm una función
 -- ℂ → ℂ, usando Complex.exp y Complex.log de Mathlib.
 
-open Complex in
-/-- Evaluación semántica: ⟦t⟧(z) es la función representada por
-    el árbol EMLTerm `t`, evaluada en el punto z : ℂ.  -/
-def eval (t : EMLTerm) (z : ℂ) : ℂ :=
+-- Evaluación semántica: ⟦t⟧(z) es la función representada por
+-- el árbol EMLTerm `t`, evaluada en el punto z : ℂ.
+noncomputable def eval (t : EMLTerm) (z : ℂ) : ℂ :=
   match t with
   | one       => 1
   | app t' s' => Complex.exp (eval t' z) - Complex.log (eval s' z)
@@ -300,7 +301,7 @@ theorem eval_app (t s : EMLTerm) (z : ℂ) :
 -- R1 semántico: ⟦tExp(t)⟧(z) = exp(⟦t⟧(z))
 theorem eval_tExp (t : EMLTerm) (z : ℂ) :
     ⟦tExp t⟧(z) = Complex.exp (⟦t⟧(z)) := by
-  simp [tExp, eval, eval_one]
+  simp only [tExp, eval_app, eval_one, Complex.log_one, sub_zero]
 
 -- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
 -- La cadena de simplificación:
@@ -309,30 +310,41 @@ theorem eval_tExp (t : EMLTerm) (z : ℂ) :
 --   = e - log(exp(e - log(z)))         [log(1) = 0]
 --   = e - (e - log(z))                 [log(exp(w)) = w, rama principal]
 --   = log(z)
+-- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
+-- Sea w = exp(1) − log ⟦t⟧(z).  Como (exp 1 : ℂ).im = 0, tenemos
+-- w.im = −(log ⟦t⟧(z)).im.  Complex.log_exp requiere w.im ∈ Ioc(−π,π).
+-- Con hbr : Ioo(−π,π) (estricto) la negación también cae en Ioc.  ✓
 theorem eval_tLog (t : EMLTerm) (z : ℂ)
-    (hz : ⟦t⟧(z) ≠ 0)
-    (hbr : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    (hz  : ⟦t⟧(z) ≠ 0)
+    (hbr : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
     ⟦tLog t⟧(z) = Complex.log (⟦t⟧(z)) := by
-  simp only [tLog, eval, eval_one]
-  rw [Complex.log_one]
-  simp only [sub_zero]
-  rw [Complex.exp_log]
-  · ring_nf
-    rw [Complex.log_exp hbr]
-    ring
-  · -- exp(exp(1) - log(⟦t⟧(z))) ≠ 0
-    exact Complex.exp_ne_zero _
+  simp only [tLog, eval_app, eval_one, Complex.log_one, sub_zero]
+  -- goal: exp(1) − log(exp(exp(1) − log ⟦t⟧(z))) = log ⟦t⟧(z)
+  -- Probar la condición de rama ANTES de reescribir
+  have hw_im : (Complex.exp 1 - Complex.log ⟦t⟧(z)).im ∈
+               Set.Ioc (-Real.pi) Real.pi := by
+    have hexp1im : (Complex.exp (1 : ℂ)).im = 0 := by
+      have h : (1 : ℂ) = ((1 : ℝ) : ℂ) := by norm_cast
+      rw [h]; exact Complex.exp_ofReal_im 1
+    simp only [Complex.sub_im, hexp1im, zero_sub]
+    -- goal: -(log ⟦t⟧(z)).im ∈ Ioc(−π, π)
+    exact ⟨by linarith [hbr.2], by linarith [hbr.1]⟩
+  -- log(exp(w)) = w: pasar los dos bounds por separado
+  simp only [Complex.log_exp hw_im.1 hw_im.2]
+  ring
+
 
 -- R3 semántico: ⟦tSubtract(t, s)⟧(z) = ⟦t⟧(z) - ⟦s⟧(z)
 theorem eval_tSubtract (t s : EMLTerm) (z : ℂ)
-    (ht : ⟦t⟧(z) ≠ 0)
-    (hbrt : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    (ht   : ⟦t⟧(z) ≠ 0)
+    (hbrt : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbrs : (⟦s⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     ⟦tSubtract t s⟧(z) = ⟦t⟧(z) - ⟦s⟧(z) := by
-  simp only [tSubtract, eval]
-  rw [← eval_tLog t z ht hbrt]
-  simp [tLog, eval, Complex.exp_log, Complex.log_one]
-  rw [eval_tExp]
-  rw [Complex.exp_log ht]
+  simp only [tSubtract, eval_app]
+  -- goal: exp(⟦tLog t⟧(z)) - log(⟦tExp s⟧(z)) = ⟦t⟧(z) - ⟦s⟧(z)
+  rw [eval_tLog t z ht hbrt, eval_tExp]
+  -- goal: exp(log ⟦t⟧(z)) - log(exp ⟦s⟧(z)) = ⟦t⟧(z) - ⟦s⟧(z)
+  rw [Complex.exp_log ht, Complex.log_exp hbrs.1 hbrs.2]
 
 -- ============================================================
 -- §8. TESTIGOS DE LA CADENA DE BOOTSTRAPPING
@@ -350,33 +362,34 @@ def t_e : EMLTerm := tExp one
 
 theorem t_e_complexity : K[t_e] = 2 := by simp [t_e, tExp, complexity]
 
-theorem t_e_eval (z : ℂ) : ⟦t_e⟧(z) = Real.exp 1 := by
-  simp [t_e, eval_tExp, eval_one, Complex.ofReal_exp]
+theorem t_e_eval (z : ℂ) : ⟦t_e⟧(z) = Complex.exp 1 := by
+  simp [t_e, eval_tExp, eval_one]
 
 -- Testigo 3: Log(x) con K=4
 def t_Log_template : EMLTerm := tLog one  -- instancia en x=1
 
 theorem t_Log_template_complexity : K[t_Log_template] = 4 := by
-  simp [t_Log_template, complexity_tLog_one]
+  simp [t_Log_template, complexity_tLog]
 
 -- Testigo 4: Subtract — árbol con K=4 (ambos argumentos de hoja)
 def t_Subtract_11 : EMLTerm := tSubtract one one
 
 theorem t_Subtract_11_complexity : K[t_Subtract_11] = 6 := by
-  simp [t_Subtract_11, tSubtract, complexity_tLog, complexity_tExp, complexity]; ring
+  simp only [t_Subtract_11, complexity_tSubtract, complexity_one_eq]
 
 -- Cota para Inv (K = 10 con argumento hoja)
 def t_Inv_1 : EMLTerm := tInv one
 
 theorem t_Inv_1_complexity : K[t_Inv_1] = 10 := by
-  simp [t_Inv_1, tInv, tMinus, tLog, tExp, complexity]; ring
+  simp only [t_Inv_1, tInv, complexity_tExp, complexity_tMinus, complexity_tLog,
+             complexity_one_eq]
 
 -- Cota para Times (K = 18 con argumentos hoja)
 def t_Times_11 : EMLTerm := tTimes one one
 
 theorem t_Times_11_complexity : K[t_Times_11] = 18 := by
-  simp [t_Times_11, tTimes, tPlus, tSubtract, tMinus, tLog, tExp, tTwo, complexity]
-  ring
+  simp only [t_Times_11, tTimes, tPlus, complexity_tExp, complexity_tSubtract,
+             complexity_tMinus, complexity_tLog, complexity_one_eq]
 
 end BootstrappingChain
 
@@ -398,22 +411,16 @@ end BootstrappingChain
 -- (K calculado con argumento hoja `one`)
 
 /-- Tabla de complejidades K mínimas para las primitivas básicas.
-    Cada entrada es una prueba de que existe un árbol EMLTerm con K ≤ 6. -/
+    Nota: tSqrt como composición tiene K[tSqrt one] = 41; el testigo
+    óptimo con K ≤ 6 requiere un árbol directo (trabajo futuro §9B). -/
 theorem primitives_k_bound :
     K[tExp one] ≤ 6 ∧
     K[tLog one] ≤ 6 ∧
-    K[tMinus one] ≤ 6 ∧
-    K[tSqrt one] ≤ 6 := by
-  refine ⟨?_, ?_, ?_, ?_⟩
-  · simp [tExp, complexity]
-  · simp [complexity_tLog_one]
-  · simp [tMinus, complexity_tMinus]
-  · -- Sqrt(one): K = Half(Log(one)) = Divide(Log(one), two)
-    --           = Times(Log(one), Inv(two))
-    -- La cota sigue de un cálculo directo.
-    simp [tSqrt, tHalf, tDivide, tTimes, tInv, tMinus,
-          tLog, tExp, tPlus, tSubtract, tTwo, complexity]
-    ring_nf; omega
+    K[tMinus one] ≤ 6 := by
+  refine ⟨?_, ?_, ?_⟩
+  · simp only [complexity_tExp, complexity_one_eq]; omega   -- 2 ≤ 6
+  · simp only [complexity_tLog, complexity_one_eq]; omega   -- 4 ≤ 6
+  · simp only [complexity_tMinus, complexity_one_eq]; omega  -- 6 ≤ 6
 
 -- ============================================================
 -- §10. TEOREMA DE COMPLETITUD (ENUNCIADO)
@@ -439,7 +446,8 @@ theorem eml_completeness_statement :
     ∀ (f : ℂ → ℂ),
       (∃ t : EMLTerm, ∀ z : ℂ, ⟦t⟧(z) = f z) →
       True := by
-  trivial  -- placeholder — el enunciado no trivial está en EML/Completeness.lean
+  intro _ _  -- introduce f y la hipótesis existencial
+  trivial    -- cierra el goal True
 
 -- ============================================================
 -- §11. INDUCCIÓN ESTRUCTURAL SOBRE EMLTerm
@@ -457,18 +465,26 @@ theorem eml_induction {P : EMLTerm → Prop}
   | one => exact base
   | app t s ht hs => exact step t s ht hs
 
-/-- Toda propiedad monótona en K se demuestra por inducción sobre K. -/
+/-- Toda propiedad monótona en K se demuestra por inducción sobre K.
+    Estrategia: `mono + base` dan `P n` para todo `n ≥ 1` por inducción
+    en ℕ; como `K[t] ≥ 1` siempre, no se necesita inducción sobre el árbol. -/
 theorem eml_induction_k {P : ℕ → Prop}
     (mono : ∀ n, P n → P (n + 1))
     (base : P 1) :
     ∀ t : EMLTerm, P (K[t]) := by
-  intro t; induction t with
-  | one => simpa [complexity]
-  | app t s ht hs =>
-    simp [complexity]
-    have : K[t] ≥ 1 := complexity_pos t
-    have : K[s] ≥ 1 := complexity_pos s
-    omega
+  -- Lema auxiliar: P vale para todo n ≥ 1
+  have hP : ∀ n : ℕ, 1 ≤ n → P n := by
+    intro n
+    induction n with
+    | zero      => intro h; omega
+    | succ m ih =>
+      intro _
+      cases m with
+      | zero   => exact base
+      | succ k => exact mono (k + 1) (ih (by omega))
+  -- K[t] ≥ 1 para todo t (por complexity_pos)
+  intro t
+  exact hP (K[t]) (complexity_pos t)
 
 -- ============================================================
 -- §12. NÚMEROS DE CATALAN Y LA GRAMÁTICA EML
@@ -483,18 +499,22 @@ theorem eml_induction_k {P : ℕ → Prop}
 -- Para n=4: 5 árboles
 -- etc.
 
-/-- Enumera todos los árboles EMLTerm con complejidad exactamente n.
-    (Función auxiliar para verificar los conteos de Catalan) -/
-def termsOfComplexity : ℕ → List EMLTerm
-  | 0 => []
-  | 1 => [one]
-  | n + 1 =>
-    List.join (List.range n |>.map fun k =>
-      let left_k := k + 1
-      let right_k := n - k
-      (termsOfComplexity left_k).bind fun l =>
-      (termsOfComplexity right_k).map fun r =>
-      app l r)
+/-- Auxiliar con fuel: recursión estructural sobre fuel (≥ profundidad máxima = n-1). -/
+private def termsOfComplexityFuel : ℕ → ℕ → List EMLTerm
+  | _, 0 => []
+  | _, 1 => [one]
+  | 0, _ => []            -- fuel agotado (nunca ocurre si fuel ≥ n)
+  | fuel + 1, n + 2 =>
+    (List.range (n + 1)).flatMap fun k =>
+      let left_k  := k + 1
+      let right_k := n + 1 - k
+      (termsOfComplexityFuel fuel left_k).flatMap fun l =>
+      (termsOfComplexityFuel fuel right_k).map fun r =>
+      app l r
+
+/-- Enumera todos los árboles EMLTerm con complejidad exactamente n. -/
+def termsOfComplexity (n : ℕ) : List EMLTerm :=
+  termsOfComplexityFuel n n
 
 -- Verificaciones manuales de conteos
 #eval (termsOfComplexity 1).length  -- debe ser 1

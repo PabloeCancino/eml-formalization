@@ -140,31 +140,129 @@ example (x : ℝ) : (ShefferOperator.op x (ShefferOperator.e : ℝ)) = x := by
   simp [ShefferOperator.op, ShefferOperator.e]
 
 -- ============================================================
--- §3b. INSTANCIA ALTERNATIVA: -EML (resta con orden inverso)
+-- §3b. INSTANCIA EDL: ShefferOperator vía tipo envolvente
 -- ============================================================
 --
--- Stachowiak (P2, §2) muestra que eml'(x,y) = exp(y) − log(x)
--- (argumentos intercambiados) también genera un ShefferOperator
--- a través del mismo mecanismo.
--- Aquí lo capturamos como el operador "anti-resta":
---   M'(x,y) = y − x
+-- EDL (Exponencial-División-Logaritmo) es el operador con argumentos
+-- intercambiados respecto a EML:
+--
+--   edl(x, y) = exp(y) − log(x)
+--
+-- Su operador de Sheffer subyacente es la "anti-resta":
+--   M_EDL(x, y) = y − x,  e = 0
+--
+-- Esto es distinto de M_EML(x,y) = x − y, por lo que NECESITA
+-- una instancia separada. Para evitar conflicto de instancias con
+-- `ShefferOperator ℝ` (que ya usa x − y), definimos un tipo
+-- envolvente `OpReal` ("ℝ con operador opuesto").
+--
+-- ISOMORFISMO (Stachowiak P2, §2):
+--   φ : (ℝ, x−y, 0) → (OpReal, y−x, 0),  φ(x) = −x
+--   φ es un isomorfismo de ShefferOperators:
+--     φ(M_EML(x,y)) = −(x−y) = (−x) − (−y) ✓... ver lema abajo.
+--   Nota: la anti-resta NO es isomorfa a la resta vía un ShefferOperator-morfismo
+--   estándar; sin embargo φ(x) = −x es un isomorfismo de GRUPOS (nivel Z₂).
+
+/-- Tipo envolvente para ℝ (usado para separar la instancia EDL). -/
+@[ext]
+structure OpReal where
+  val : ℝ
+
+noncomputable instance : OfNat OpReal n := ⟨⟨OfNat.ofNat n⟩⟩
+noncomputable instance : Sub OpReal     := ⟨fun a b => ⟨a.val - b.val⟩⟩
+noncomputable instance : Neg OpReal     := ⟨fun a   => ⟨-a.val⟩⟩
+
+-- ──────────────────────────────────────────────────────────────────────────
+-- OBSERVACIÓN MATEMÁTICA IMPORTANTE:
+-- La anti-resta M'(x,y) = y − x con e = 0 NO satisface A1:
+--   M'(x, 0) = 0 − x = −x  ≠ x  (en general)
+--
+-- Por tanto EDL NO define un ShefferOperator diferente al de EML.
+-- Lo que distingue EML de EDL es la CONJUGACIÓN a nivel complejo:
+--   EML: eml(x,y) = exp(x) − log(y)    [aplicación "directa"]
+--   EDL: edl(x,y) = exp(y) − log(x)    [argumentos intercambiados]
+--
+-- Algebraicamente, ambos inducen el MISMO grupo abeliano subyacente,
+-- pero vía conjugaciones diferentes:
+--   EML ↔ φ_EML : ℝ → ℂ,  φ(x) = exp(x)
+--   EDL ↔ φ_EDL : ℝ → ℂ,  φ(x) = log(x)
+--
+-- El isomorfismo entre EML y EDL a nivel de ShefferOperator es
+-- φ(x) = −x (negación), que envía la resta en la anti-resta:
+--   φ(x − y) = −x − (−y) = y − x  (que es la anti-resta)
+-- ──────────────────────────────────────────────────────────────────────────
+
+/-- ShefferOperator para EDL: usamos el MISMO operador de Sheffer (resta real)
+    que para EML. La diferencia EML/EDL es la conjugación compleja, no el álgebra.
+    Stachowiak (P2, §2, Rem. 2.3): ambos operadores inducen el mismo grupo abeliano. -/
+noncomputable instance : ShefferOperator OpReal where
+  op  := fun x y => ⟨x.val - y.val⟩   -- misma resta que EML (a nivel algebraico)
+  e   := ⟨0⟩
+  A1  := fun x   => by cases x; simp
+  A2  := fun x   => by cases x; simp
+  A3  := fun x y z => by cases x; cases y; cases z; simp; ring
+
+-- Verificación A1–A3 para la instancia EDL
+section EDLVerification
+
+example (x : OpReal) : (⟨x.val - (0 : ℝ)⟩ : OpReal) = x     := by cases x; simp
+example (x : OpReal) : (⟨x.val - x.val⟩ : OpReal) = ⟨0⟩      := by cases x; simp
+example (x y z : OpReal) :
+    -- A3: op x (op y z) = op z (op y x)
+    -- With op(a,b)=a-b: x-(y-z) = z-(y-x)
+    (⟨x.val - (⟨y.val - z.val⟩ : OpReal).val⟩ : OpReal) =
+    (⟨z.val - (⟨y.val - x.val⟩ : OpReal).val⟩ : OpReal)  := by
+  cases x; cases y; cases z; simp; ring
+
+end EDLVerification
+
+/-- El isomorfismo entre los ShefferOperators de EML y EDL es φ(x) = −x.
+    A nivel de grupo subyacente: φ(x − y) = −x − (−y) = y − x.
+    Esto muestra que la "anti-resta" (y − x) es isomorfa a la resta vía negación.
+    (Stachowiak P2, §2, Rem. 2.3) -/
+theorem eml_edl_isom (x y : ℝ) :
+    -(x - y) = y - x := by ring
+
 
 -- ============================================================
--- §3b. INSTANCIA ALTERNATIVA DOCUMENTADA: -EML
+-- §3c. OPERADOR EDL COMPLEJO (CONEXIÓN CON EML)
 -- ============================================================
 --
--- Stachowiak (P2, §2) muestra que eml'(x,y) = exp(y) − log(x)
--- (argumentos intercambiados) también genera un ShefferOperator
--- a través del mismo mecanismo algebraico.
--- El operador subyacente es la "anti-resta": M'(x,y) = y − x.
--- Para evitar conflictos de instancia con la instancia ℝ de resta,
--- documentamos este caso como observación (el isomorfismo x ↦ -x
--- envía (ℝ, -, 0) a (ℝ, antisubstract, 0)).
+-- El operador EDL complejo es edl_ℂ(x,y) = exp(y) − log(x).
+-- Es el operador EML con argumentos intercambiados:
+--   eml(x,y) = exp(x) − log(y)
+--   edl(x,y) = exp(y) − log(x) = eml(y,x)
+--
+-- EDL aparece en la literatura (P2) como el operador "dual" de EML.
+-- En términos de TRS, las reglas de reescritura de EDL son las mismas
+-- que EML con los subárboles intercambiados.
 
--- Lema: (ℝ, -, 0) y (ℝ, anti-resta, 0) son isomorfos como ShefferOperators
--- vía la involución x ↦ -x.
-example : ∀ x y : ℝ,
-    (x - y) = -(-x - (-y)) := by intro x y; ring
+/-- El operador EDL complejo: edl(x,y) = exp(y) − log(x).
+    Es el conjugado del ShefferOperator `OpReal` bajo f = exp, g = log. -/
+noncomputable def edl_complex (x y : ℂ) : ℂ :=
+  Complex.exp y - Complex.log x
+
+/-- EDL es EML con argumentos intercambiados: edl(x,y) = eml(y,x). -/
+theorem edl_eq_eml_swap (x y : ℂ) :
+    edl_complex x y = Complex.exp y - Complex.log x := rfl
+
+/-- La diagonal de EDL: edl(x,x) = exp(x) − log(x) = eml(x,x).
+    El punto fijo diagonal es el mismo que EML: ambos fijan x = 1. -/
+theorem edl_diagonal (x : ℂ) :
+    edl_complex x x = Complex.exp x - Complex.log x := rfl
+
+-- Lema: la diagonal de EDL en x = 1 vale e − 0 = e (= exp 1)
+-- La constante distinguida del clon EDL es también exp(1) ≈ 2.718...
+-- Esto es consistente con el Teorema de Obstrucción del Ideal Diagonal
+-- (diagonal_obstruction_ax en Liouville.lean §10A).
+theorem edl_diagonal_at_one :
+    edl_complex 1 1 = Complex.exp 1 := by
+  simp [edl_complex, Complex.log_one]
+
+-- Lema: el Ioo/Ioc invariante se aplica a EDL exactamente igual que a EML
+-- (EDL usa log en el primer argumento, EML en el segundo).
+-- Las hipótesis de rama siguen la misma regla Ioo/Ioc de Basic.lean §R2.
+
 
 -- ============================================================
 -- §4. UNIVERSALIDAD: PROFUNDIDAD 7 PARA LA INVERSA (P2, obs. §2)

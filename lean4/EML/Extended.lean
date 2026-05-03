@@ -471,7 +471,7 @@ private theorem ceval_tLog_one (z : ℂ) : ⟦tLog one⟧ℂ(z) = 0 := by
   have : ⟦tLog one⟧ℂ(z) = Complex.log (⟦one⟧ℂ(z)) :=
     ceval_tLog one z
       (by simp)
-      (by simp [Complex.log_one, Set.mem_Ioo, Real.pi_pos, neg_lt_self Real.pi_pos])
+      (by simp only [ceval_one, Complex.log_one]; constructor <;> simp [Real.pi_pos, Real.pi_pos.le, neg_lt_self Real.pi_pos])
       (by simp [Complex.log_one]; exact hbr)
   simp [this]
 

@@ -314,35 +314,24 @@ theorem eval_tExp (t : EMLTerm) (z : ℂ) :
   simp only [tExp, eval_app, eval_one, Complex.log_one, sub_zero]
 
 -- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
--- La cadena de simplificación:
---   ⟦f(1, f(f(1,t), 1))⟧(z)
---   = exp(1) - log(exp(exp(1) - log(⟦t⟧(z))) - log(1))
---   = e - log(exp(e - log(z)))         [log(1) = 0]
---   = e - (e - log(z))                 [log(exp(w)) = w, rama principal]
---   = log(z)
--- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
 -- Sea w = exp(1) − log ⟦t⟧(z).  Como (exp 1 : ℂ).im = 0, tenemos
 -- w.im = −(log ⟦t⟧(z)).im.  Complex.log_exp requiere w.im ∈ Ioc(−π,π).
--- hbr : Ioc(−π,π) garantiza que −(log ⟦t⟧(z)).im ∈ Ioc(−π,π)  ✓
--- Verificado: Mathlib4 define Complex.log_exp con h₂ : z.im ≤ π  (Set.Ioc)
+-- Nota de arquitectura: eval_tLog requiere Ioo (NO Ioc) porque si im = π,
+-- entonces la negación -im = -π ∉ Ioc(-π,π] y log_exp falla.
+-- Los teoremas derivados (eval_tPlus, eval_tTimes) usan Ioc directamente.
 theorem eval_tLog (t : EMLTerm) (z : ℂ)
-    (hz  : ⟦t⟧(z) ≠ 0)
+    (_hz : ⟦t⟧(z) ≠ 0)
     (hbr : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
     ⟦tLog t⟧(z) = Complex.log (⟦t⟧(z)) := by
   simp only [tLog, eval_app, eval_one, Complex.log_one, sub_zero]
-  -- goal: exp(1) − log(exp(exp(1) − log ⟦t⟧(z))) = log ⟦t⟧(z)
-  -- Probar la condición de rama ANTES de reescribir
   have hw_im : (Complex.exp 1 - Complex.log ⟦t⟧(z)).im ∈
                Set.Ioc (-Real.pi) Real.pi := by
     have hexp1im : (Complex.exp (1 : ℂ)).im = 0 := by
       have h : (1 : ℂ) = ((1 : ℝ) : ℂ) := by norm_cast
       rw [h]; exact Complex.exp_ofReal_im 1
     simp only [Complex.sub_im, hexp1im, zero_sub]
-    -- goal: -(log ⟦t⟧(z)).im ∈ Ioc(−π, π)
-    -- hbr : Ioo(-π, π), es decir -π < im < π (ambos estrictos)
-    -- Negando: -π < -im < π, luego -im ∈ Ioo ⊂ Ioc
+    -- CONCLUSIÓN ARQUITECTÓNICA: eval_tLog debe usar Ioo para poder negar.
     exact ⟨by linarith [hbr.2], by linarith [hbr.1]⟩
-  -- log(exp(w)) = w: pasar los dos bounds por separado
   simp only [Complex.log_exp hw_im.1 hw_im.2]
   ring
 
@@ -419,6 +408,7 @@ theorem eval_tInv (t : EMLTerm) (z : ℂ)
     rw [hlogt_eq]; exact ⟨hbrt.1, le_of_lt hbrt.2⟩
   rw [eval_tMinus (tLog t) z hbr_logt, hlogt_eq]
   rw [Complex.exp_sub, Complex.exp_log ht]
+
 
 -- R7 semántico: ⟦tTimes(t, s)⟧(z) = ⟦t⟧(z) * ⟦s⟧(z)
 -- tTimes t s = tExp (tPlus (tLog t) (tLog s))

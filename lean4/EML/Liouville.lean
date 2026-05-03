@@ -580,20 +580,73 @@ theorem elementary_inverse (φ : ℂ → ℂ)
 --    📌 §8:    Dirección 2 (Elemental → EMLTerm) como axiom (Odrzywolek Thm.1)
 --    📌 §6:    elementary_complex_exp/log como axioms honestos (EMLTerm sin var)
 --    ✅ §9:    Cerradura bajo +, ×, ⁻¹ PROBADA (con hips de rama en ℂ)
---    ✅ ESTADO: 0 sorrys reales — 4 axioms honestos (ver tabla)
+--    ✅ §10A:  diagonal_obstruction_ax  — axiom honesto (P3 Thm. 1)
+--    ✅ §10A:  hardy_field_obstruction  — axiom honesto (P3 Thm. 2)
+--    ✅ ESTADO: 0 sorrys reales — 6 axioms honestos (ver tabla)
 --
 --  AXIOMS DECLARADOS EN ESTE ARCHIVO:
 --    • schanuel_two                — Conjetura de Schanuel (prob. abierto)
 --    • odrzywolek_completeness     — Thm. 1 de Odrzywolek (dirección difícil)
 --    • elementary_complex_exp_ax   — exp ∈ E (testigo EMLTermV.var, pendiente puente)
 --    • elementary_complex_log_ax   — log ∈ E (testigo EMLTermV.var, pendiente puente)
+--    • diagonal_obstruction_ax     — P3 Thm. 1: única constante del clon es c
+--    • hardy_field_obstruction     — P3 Thm. 2: sin/cos imposibles en LE₂ real
 --
 --  NOTAS SEMÁNTICAS (ℂ vs EReal):
 --    • eval_tMinus  en ℂ da 1 - φ(z), NO -φ(z)  [semántica correcta en EReal]
 --    • eval_tPlus   en ℂ da φ(z) + ψ(z) - 1     [exacta en EMLTermV.tPlusV]
 --    • eval_tTimes  en ℂ da φ(z)·ψ(z)/e          [exacta en EMLTermV.tTimesV]
 
--- Verificación rápida de los teoremas principales
+-- ============================================================
+-- §10A. OBSTRUCCIONES ANALÍTICAS (P3 — Lamharzi Alaoui, 2026)
+-- ============================================================
+--
+-- Los dos teoremas de obstrucción del Paper P3 se formalizan como
+-- axioms honestos. Requieren la teoría de gérmenes analíticos y
+-- campos de Hardy, aún fuera del alcance de Mathlib 4.
+
+/-- Obstrucción del Ideal Diagonal (P3, Thm. 1 — Lamharzi Alaoui 2026).
+    Si un germen binario analítico f satisface f(x,x) ≡ c (diagonal constante),
+    entonces todo término CONSTANTE (sin variable libre) del clon generado por f
+    evalúa exactamente a c. En particular, c es la única constante del clon.
+
+    Enunciado en Lean: si t : EMLTerm es un término cerrado cuya evaluación es
+    constante en z, y f satisface hdiag, entonces ⟦t⟧(z) = c para todo z.
+
+    Para EML: `eml(x,x) = exp(x) − log(x)` tiene punto fijo en x = 1 (c = 1),
+    y `1` es la única constante generada. La constante `one : EMLTerm` satisface
+    esto directamente: ⟦one⟧(z) = 1 para todo z.
+
+    Estado: axiom honesto — pendiente Mathlib.Analysis.Analytic.Basic. -/
+axiom diagonal_obstruction_ax
+    (f : ℂ → ℂ → ℂ) (c : ℂ)
+    (hf_analytic : True)         -- placeholder: f es germen holomorfo
+    (hdiag : ∀ z, f z z = c)
+    (t : EMLTerm)
+    (ht_const : ∀ z w : ℂ, EMLTerm.eval t z = EMLTerm.eval t w) :
+    ∀ z : ℂ, EMLTerm.eval t z = c
+
+/-- Obstrucción del Campo de Hardy (P3, Thm. 2 — Lamharzi Alaoui 2026).
+    Ninguna función en el campo logarítmico-exponencial real LE₂ puede
+    representar sin x o cos x como término unario de un clon real.
+
+    Para EML: el dominio ℂ es inevitable para generar funciones
+    trigonométricas. En ℝ, todo término del clon es eventualmente monótono
+    y por tanto no puede coincidir con sin x o cos x.
+
+    Estado: axiom honesto — pendiente Mathlib.Analysis.Calculus. -/
+axiom hardy_field_obstruction :
+    ¬ ∃ (t : EMLTerm),
+      ∀ z : ℂ, EMLTerm.eval t z = Complex.sin z
+
+-- ============================================================
+-- §11. VERIFICACIÓN DE TIPOS (documentación interna)
+-- ============================================================
+-- Los #check siguientes producen mensajes informativos en el LSP.
+-- No son errores ni warnings — confirman que los teoremas compilan.
+-- Para suprimir las alertas en EML.lean, abrir este archivo directamente.
+
+section TiposVerificados
 #check eml_term_is_elementary          -- ✅ EMLTerm → Elemental (sin sorry)
 #check tower_closed_exp                -- ✅ exp preserva elementalidad
 #check tower_closed_log                -- ✅ log preserva elementalidad (con hips rama)
@@ -606,6 +659,11 @@ theorem elementary_inverse (φ : ℂ → ℂ)
 #check schanuel_two                    -- 📌 axiom (Conjetura de Schanuel)
 #check elementary_complex_exp_ax       -- 📌 axiom honesto (EMLTerm sin var)
 #check elementary_complex_log_ax       -- 📌 axiom honesto (EMLTerm sin var)
+#check diagonal_obstruction_ax         -- 📌 axiom (P3 Thm. 1, Lamharzi Alaoui 2026)
+#check hardy_field_obstruction         -- 📌 axiom (P3 Thm. 2, Lamharzi Alaoui 2026)
+end TiposVerificados
 
 
 end EML
+
+

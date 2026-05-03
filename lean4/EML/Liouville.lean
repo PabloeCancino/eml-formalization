@@ -243,7 +243,7 @@ set_option linter.unusedVariables false in
 theorem tower_closed_log (n : ℕ) (φ : ℂ → ℂ)
     (hφ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = φ z)
     (hz  : ∀ z : ℂ, φ z ≠ 0)
-    (hbr : ∀ z : ℂ, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    (hbr : ∀ z : ℂ, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi) :
     ∃ t' : EMLTerm, ∀ z : ℂ, EMLTerm.eval t' z = Complex.log (φ z) := by
   obtain ⟨t, ht⟩ := hφ
   exact ⟨EMLTerm.tLog t, fun z => by
@@ -481,6 +481,14 @@ theorem eml_liouville_bijection :
 --
 -- Demostramos que las operaciones de campo clásicas (suma, producto,
 -- cociente) preservan la elementalidad, usando los testigos de Basic.lean.
+--
+-- REGLA Ioo/Ioc (invariante de rama — fuente canónica: Basic.lean §R2):
+--   • Hipótesis que se pasan a eval_tLog → deben ser Set.Ioo(-π, π).
+--     Razón: eval_tLog niega la parte imaginaria internamente. Si im ∈ Ioo
+--     entonces -im ∈ Ioo ⊆ Ioc (válido para log_exp). Si im ∈ Ioc y im = π,
+--     entonces -im = -π ∉ Ioc(-π, π] → log_exp falla.
+--   • Hipótesis sobre resultados de tLog o Im directas → Set.Ioc(-π, π).
+--   Regla rápida: "pasa a eval_tLog → Ioo; log_exp directo → Ioc".
 
 /-- Suma de funciones elementales es elemental.
     En ℂ, eval_tPlus da φ z + ψ z - 1 (corrido por 1/e);
@@ -490,14 +498,14 @@ theorem elementary_sum (φ ψ : ℂ → ℂ)
     (hφ : IsLiouvilleElementaryComplex φ)
     (hψ : IsLiouvilleElementaryComplex ψ)
     (hφne : ∀ z, φ z ≠ 0)
-    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
     (hbrs  : ∀ z, (ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbrs2 : ∀ z, (1 - ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     IsLiouvilleElementaryComplex (fun z => φ z + ψ z - 1) := by
   obtain ⟨tφ, hφeq⟩ := hφ
   obtain ⟨tψ, hψeq⟩ := hψ
   exact ⟨EMLTerm.tPlus tφ tψ, fun z => by
-    simp only []  -- beta-reduce (fun z => φ z + ψ z - 1) z → φ z + ψ z - 1
+    simp only []
     rw [EMLTerm.eval_tPlus tφ tψ z
       (hφeq z ▸ hφne z)
       (hφeq z ▸ hbrt z)
@@ -511,10 +519,10 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
     (hψ : IsLiouvilleElementaryComplex ψ)
     (hφne  : ∀ z, φ z ≠ 0)
     (hψne  : ∀ z, ψ z ≠ 0)
-    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
-    (hbrs  : ∀ z, (Complex.log (ψ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbrs  : ∀ z, (Complex.log (ψ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
     (hlogt_ne  : ∀ z, Complex.log (φ z) ≠ 0)
-    (hbr_logt  : ∀ z, (Complex.log (Complex.log (φ z))).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbr_logt  : ∀ z, (Complex.log (Complex.log (φ z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
     (hbr_logs  : ∀ z, (Complex.log (ψ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_logs2 : ∀ z, (1 - Complex.log (ψ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     IsLiouvilleElementaryComplex (fun z => φ z * ψ z / Complex.exp 1) := by
@@ -523,15 +531,13 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
   exact ⟨EMLTerm.tTimes tφ tψ, fun z => by
     have htφne : ⟦tφ⟧(z) ≠ 0 := hφeq z ▸ hφne z
     have htψne : ⟦tψ⟧(z) ≠ 0 := hψeq z ▸ hψne z
-    have hbrt_z : (Complex.log (⟦tφ⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi := hφeq z ▸ hbrt z
-    have hbrs_z : (Complex.log (⟦tψ⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi := hψeq z ▸ hbrs z
-    -- Establish: ⟦tLog tφ⟧(z) = Complex.log (φ z)
+    have hbrt_z : (Complex.log (⟦tφ⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi := hφeq z ▸ hbrt z
+    have hbrs_z : (Complex.log (⟦tψ⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi := hψeq z ▸ hbrs z
     have hlogt_eq : ⟦EMLTerm.tLog tφ⟧(z) = Complex.log ⟦tφ⟧(z) :=
       EMLTerm.eval_tLog tφ z htφne hbrt_z
     have hlogt_ne_z : ⟦EMLTerm.tLog tφ⟧(z) ≠ 0 := hlogt_eq ▸ (hφeq z ▸ hlogt_ne z)
-    have hbr_logt_z : (Complex.log (⟦EMLTerm.tLog tφ⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi :=
+    have hbr_logt_z : (Complex.log (⟦EMLTerm.tLog tφ⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi :=
       hlogt_eq ▸ (hφeq z ▸ hbr_logt z)
-    -- Establish: ⟦tLog tψ⟧(z) = Complex.log (ψ z)
     have hlogs_eq : ⟦EMLTerm.tLog tψ⟧(z) = Complex.log ⟦tψ⟧(z) :=
       EMLTerm.eval_tLog tψ z htψne hbrs_z
     have hbr_logs_z : (⟦EMLTerm.tLog tψ⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi :=
@@ -548,7 +554,7 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
 theorem elementary_inverse (φ : ℂ → ℂ)
     (hφ : IsLiouvilleElementaryComplex φ)
     (hφne : ∀ z, φ z ≠ 0)
-    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
+    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi) :
     IsLiouvilleElementaryComplex (fun z => Complex.exp 1 / φ z) := by
   obtain ⟨tφ, hφeq⟩ := hφ
   exact ⟨EMLTerm.tInv tφ, fun z => by

@@ -316,9 +316,19 @@ theorem eval_tExp (t : EMLTerm) (z : ℂ) :
 -- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
 -- Sea w = exp(1) − log ⟦t⟧(z).  Como (exp 1 : ℂ).im = 0, tenemos
 -- w.im = −(log ⟦t⟧(z)).im.  Complex.log_exp requiere w.im ∈ Ioc(−π,π).
--- Nota de arquitectura: eval_tLog requiere Ioo (NO Ioc) porque si im = π,
--- entonces la negación -im = -π ∉ Ioc(-π,π] y log_exp falla.
--- Los teoremas derivados (eval_tPlus, eval_tTimes) usan Ioc directamente.
+--
+-- REGLA ARQUITECTÓNICA Ioo/Ioc (invariante del proyecto):
+--   • eval_tLog  recibe  hbr : Ioo(-π, π)   [abierto en AMBOS extremos]
+--     Razón: w.im = -im. Si im ∈ Ioo → -im ∈ Ioo ⊆ Ioc ✓
+--            Si im ∈ Ioc (im = π posible) → -im = -π ∉ Ioc(-π,π] ✗
+--   • log_exp    recibe  h ∈ Ioc(-π, π)      [abierto solo en izquierda]
+--     Razón: es la API de Mathlib (h₁ : -π < w.im, h₂ : w.im ≤ π)
+--   • Resultados de tLog y coordenadas Im directas usan Ioc.
+--
+-- CONSECUENCIA: todo teorema que pasa su hipótesis de rama a eval_tLog
+-- (directamente o via eval_tSubtract / eval_tPlus / eval_tInv / eval_tTimes)
+-- DEBE declarar esa hipótesis con Ioo. Solo se usa Ioc cuando la hipótesis
+-- va directamente a log_exp o como resultado de una evaluación de tLog.
 theorem eval_tLog (t : EMLTerm) (z : ℂ)
     (_hz : ⟦t⟧(z) ≠ 0)
     (hbr : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :

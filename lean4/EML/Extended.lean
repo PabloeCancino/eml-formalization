@@ -395,7 +395,7 @@ theorem ceval_tExp (t : EMLTermV) (z : ℂ) :
 set_option linter.unusedVariables false in
 theorem ceval_tLog (t : EMLTermV) (z : ℂ)
     (hne   : ⟦t⟧ℂ(z) ≠ 0)
-    (hbr   : (Complex.log (⟦t⟧ℂ(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr   : (Complex.log (⟦t⟧ℂ(z))).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_w : -Real.pi < (Complex.exp 1 - Complex.log (⟦t⟧ℂ(z))).im ∧
               (Complex.exp 1 - Complex.log (⟦t⟧ℂ(z))).im ≤ Real.pi) :
     ⟦tLog t⟧ℂ(z) = Complex.log (⟦t⟧ℂ(z)) := by
@@ -409,7 +409,7 @@ theorem ceval_tLog (t : EMLTermV) (z : ℂ)
 -- Caso especial tLog var: instancia directa con t = var.
 theorem ceval_tLog_var (z : ℂ)
     (hne   : z ≠ 0)
-    (hbr   : (Complex.log z).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr   : (Complex.log z).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_w : -Real.pi < (Complex.exp 1 - Complex.log z).im ∧
               (Complex.exp 1 - Complex.log z).im ≤ Real.pi) :
     ⟦tLog var⟧ℂ(z) = Complex.log z :=
@@ -512,7 +512,7 @@ theorem ceval_tMinusV (t : EMLTermV) (z : ℂ)
 /-- ceval de tPlusV en ℂ: da `⟦t⟧ℂ(z) + ⟦s⟧ℂ(z) - 1` (mismo que eval_tPlus en Basic.lean). -/
 theorem ceval_tPlusV (t s : EMLTermV) (z : ℂ)
     (hne_t   : ⟦t⟧ℂ(z) ≠ 0)
-    (hbr_t   : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_t   : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_tw  : -Real.pi < (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ∧
                 (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ≤ Real.pi)
     (hbr_s   : (⟦s⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
@@ -528,7 +528,7 @@ theorem ceval_tPlusV (t s : EMLTermV) (z : ℂ)
 /-- ceval de tInvV en ℂ: da `Complex.exp 1 / ⟦t⟧ℂ(z)` (mismo que eval_tInv en Basic.lean). -/
 theorem ceval_tInvV (t : EMLTermV) (z : ℂ)
     (hne_t   : ⟦t⟧ℂ(z) ≠ 0)
-    (hbr_t   : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_t   : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_tw  : -Real.pi < (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ∧
                 (Complex.exp 1 - Complex.log ⟦t⟧ℂ(z)).im ≤ Real.pi)
     (hbr_lt  : (Complex.log ⟦t⟧ℂ(z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
@@ -554,7 +554,7 @@ theorem elementary_sum_V (φ ψ : ℂ → ℂ)
     (hφ    : IsLiouvilleElementaryComplexV φ)
     (hψ    : IsLiouvilleElementaryComplexV ψ)
     (hφne  : ∀ z, φ z ≠ 0)
-    (hbr_t : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_t : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_tw: ∀ z, -Real.pi < (Complex.exp 1 - Complex.log (φ z)).im ∧
                               (Complex.exp 1 - Complex.log (φ z)).im ≤ Real.pi)
     (hbr_s : ∀ z, (ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi)
@@ -577,7 +577,7 @@ theorem elementary_sum_V (φ ψ : ℂ → ℂ)
 theorem elementary_inverse_V (φ : ℂ → ℂ)
     (hφ     : IsLiouvilleElementaryComplexV φ)
     (hφne   : ∀ z, φ z ≠ 0)
-    (hbr_t  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_t  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_tw : ∀ z, -Real.pi < (Complex.exp 1 - Complex.log (φ z)).im ∧
                                (Complex.exp 1 - Complex.log (φ z)).im ≤ Real.pi)
     (hbr_lt : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)

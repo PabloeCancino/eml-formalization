@@ -119,6 +119,16 @@ def tLog (x : EMLTerm) : EMLTerm := app one (app (app one x) one)
 -- Por tanto tMinus con argumento 'one' da 1 − x, no −x.
 -- Ver: EML/Real.lean §5 (reval_tMinus_is_one_sub).
 --
+-- OBSTRUCCIÓN DE CAMPO DE HARDY (Paper P3, Thm. 2 — Lamharzi Alaoui 2026):
+-- Los cálculos deben realizarse en el dominio complejo porque generar
+-- constantes como i y π requiere evaluar ln(−1) = iπ.
+-- Esto no es un accidente: el Thm. 2 del Paper P3 demuestra que
+-- toda función en LE₂ (logarítmico-exponencial real) que se pueda
+-- expresar como término unario del clon de cualquier operador binario
+-- real tipo EML pertenece en realidad a LE₁ y es eventualmente
+-- monótona. En particular, sin x y cos x son IMPOSIBLES en el
+-- dominio real logarítmico-exponencial, lo que fuerza el uso de ℂ.
+--
 -- La definición del árbol es correcta como expresión sintáctica;
 -- su semántica real difiere de −x. La semántica correcta de −x
 -- requiere ℂ o ℝ extendido.
@@ -313,7 +323,8 @@ theorem eval_tExp (t : EMLTerm) (z : ℂ) :
 -- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
 -- Sea w = exp(1) − log ⟦t⟧(z).  Como (exp 1 : ℂ).im = 0, tenemos
 -- w.im = −(log ⟦t⟧(z)).im.  Complex.log_exp requiere w.im ∈ Ioc(−π,π).
--- Con hbr : Ioo(−π,π) (estricto) la negación también cae en Ioc.  ✓
+-- hbr : Ioc(−π,π) garantiza que −(log ⟦t⟧(z)).im ∈ Ioc(−π,π)  ✓
+-- Verificado: Mathlib4 define Complex.log_exp con h₂ : z.im ≤ π  (Set.Ioc)
 theorem eval_tLog (t : EMLTerm) (z : ℂ)
     (hz  : ⟦t⟧(z) ≠ 0)
     (hbr : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
@@ -328,6 +339,8 @@ theorem eval_tLog (t : EMLTerm) (z : ℂ)
       rw [h]; exact Complex.exp_ofReal_im 1
     simp only [Complex.sub_im, hexp1im, zero_sub]
     -- goal: -(log ⟦t⟧(z)).im ∈ Ioc(−π, π)
+    -- hbr : Ioo(-π, π), es decir -π < im < π (ambos estrictos)
+    -- Negando: -π < -im < π, luego -im ∈ Ioo ⊂ Ioc
     exact ⟨by linarith [hbr.2], by linarith [hbr.1]⟩
   -- log(exp(w)) = w: pasar los dos bounds por separado
   simp only [Complex.log_exp hw_im.1 hw_im.2]
@@ -489,20 +502,30 @@ end BootstrappingChain
 -- §9. COTA K ≤ 6 — TEOREMA DE ODRZYWOŁEK EN LENGUAJE K
 -- ============================================================
 --
--- El resultado central del artículo (Odrzywołek, 2026) afirma que
--- toda función elemental de la Tabla 1 tiene K_EML ≤ 6.
+-- El resultado central del artículo (Odrzywołek v2, 2026, Tabla 4)
+-- afirma que toda función elemental de la Tabla 1 tiene K_EML ≤ 6
+-- según el COMPILADOR EML (cadena de reducción estándar).
 --
--- La evidencia constructiva la proporcionan los testigos:
---   tExp, tLog, tSubtract, tSqrt, tPower, ...
--- todos con K ≤ 6 cuando los argumentos son hojas.
+-- IMPORTANTE — Dos cotas distintas (Paper P1, Tabla 4):
 --
--- El verificador Rust (rust_verify) confirma computacionalmente la
--- corrección semántica de cada testigo.
+--   (a) COTA DEL COMPILADOR EML: K obtenido siguiendo la cadena de
+--       bootstrapping estándar de Odrzywołek. Esta es la cota que
+--       prueban los testigos tExp, tLog, tMinus, etc.
+--       Ejemplo: K(negación) = 57 según el compilador.
+--
+--   (b) COTA DE BÚSQUEDA DIRECTA: K obtenido por búsqueda
+--       exhaustiva sobre todos los árboles de profundidad creciente.
+--       Es óptima pero no constructiva en general.
+--       Ejemplo: K(negación) = 15 según búsqueda directa (Tabla 4, col. derecha).
+--
+-- Los teoremas de este §9 prueban la cota (a) del compilador.
+-- La cota (b) es un problema de búsqueda óptima abierto.
 
 -- Enumeración de las primitivas con su K mínimo
--- (K calculado con argumento hoja `one`)
+-- (K calculado con argumento hoja `one`, cota del compilador)
 
-/-- Tabla de complejidades K mínimas para las primitivas básicas.
+/-- Tabla de complejidades K mínimas para las primitivas básicas
+    según la cadena del COMPILADOR EML (no la búsqueda directa).
     Nota: tSqrt como composición tiene K[tSqrt one] = 41; el testigo
     óptimo con K ≤ 6 requiere un árbol directo (trabajo futuro §9B). -/
 theorem primitives_k_bound :

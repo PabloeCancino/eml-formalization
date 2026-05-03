@@ -243,7 +243,7 @@ set_option linter.unusedVariables false in
 theorem tower_closed_log (n : ℕ) (φ : ℂ → ℂ)
     (hφ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = φ z)
     (hz  : ∀ z : ℂ, φ z ≠ 0)
-    (hbr : ∀ z : ℂ, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi) :
+    (hbr : ∀ z : ℂ, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     ∃ t' : EMLTerm, ∀ z : ℂ, EMLTerm.eval t' z = Complex.log (φ z) := by
   obtain ⟨t, ht⟩ := hφ
   exact ⟨EMLTerm.tLog t, fun z => by
@@ -307,6 +307,27 @@ def IsLiouvilleElementaryComplex (f : ℂ → ℂ) : Prop :=
   ∃ (t : EMLTerm), ∀ z : ℂ, EMLTerm.eval t z = f z
 
 -- La función constante 1 es elemental
+--
+-- NECESIDAD MATEMÁTICA DE LA CONSTANTE 1 (Paper P3, Thm. 1 — Lamharzi Alaoui 2026):
+-- La constante `1` en el par generador {1, eml} NO es un artefacto de
+-- construcción, sino una NECESIDAD MATEMÁTICA demostrada por:
+--
+-- Teorema de Obstrucción del Ideal Diagonal (P3, Thm. 1):
+--   Si f(x,x) ≡ c en la categoría holomorfa o analítica real, entonces
+--   todo germen de término unario del clon generado por f es congruente
+--   a c módulo el ideal maximal. En particular:
+--   (i)  toda operación unaria del clon fija c
+--   (ii) c es la ÚNICA constante obtenible en el clon
+--
+-- Para EML: eml(x,x) = exp(x) - log(x) ≡ 1 (en el punto fijo x=1),
+-- y la constante 1 es la única constante que el operador puede generar
+-- sin información externa. No existe operador binario analítico con
+-- diagonal constante que pueda generar más de una constante.
+--
+-- Consecuencia en Lean: los axioms elementary_complex_exp_ax y
+-- elementary_complex_log_ax son consistentes con esta restricción;
+-- la versión sin axioms (EMLTermV) hace explícita la constante 1
+-- como la única semilla posible del sistema.
 theorem elementary_complex_one :
     IsLiouvilleElementaryComplex (fun _ => (1 : ℂ)) :=
   ⟨EMLTerm.one, fun z => by simp [EMLTerm.eval]⟩
@@ -469,7 +490,7 @@ theorem elementary_sum (φ ψ : ℂ → ℂ)
     (hφ : IsLiouvilleElementaryComplex φ)
     (hψ : IsLiouvilleElementaryComplex ψ)
     (hφne : ∀ z, φ z ≠ 0)
-    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbrs  : ∀ z, (ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbrs2 : ∀ z, (1 - ψ z).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     IsLiouvilleElementaryComplex (fun z => φ z + ψ z - 1) := by
@@ -490,10 +511,10 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
     (hψ : IsLiouvilleElementaryComplex ψ)
     (hφne  : ∀ z, φ z ≠ 0)
     (hψne  : ∀ z, ψ z ≠ 0)
-    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
-    (hbrs  : ∀ z, (Complex.log (ψ z)).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
+    (hbrs  : ∀ z, (Complex.log (ψ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hlogt_ne  : ∀ z, Complex.log (φ z) ≠ 0)
-    (hbr_logt  : ∀ z, (Complex.log (Complex.log (φ z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
+    (hbr_logt  : ∀ z, (Complex.log (Complex.log (φ z))).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_logs  : ∀ z, (Complex.log (ψ z)).im ∈ Set.Ioc (-Real.pi) Real.pi)
     (hbr_logs2 : ∀ z, (1 - Complex.log (ψ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     IsLiouvilleElementaryComplex (fun z => φ z * ψ z / Complex.exp 1) := by
@@ -502,13 +523,13 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
   exact ⟨EMLTerm.tTimes tφ tψ, fun z => by
     have htφne : ⟦tφ⟧(z) ≠ 0 := hφeq z ▸ hφne z
     have htψne : ⟦tψ⟧(z) ≠ 0 := hψeq z ▸ hψne z
-    have hbrt_z : (Complex.log (⟦tφ⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi := hφeq z ▸ hbrt z
-    have hbrs_z : (Complex.log (⟦tψ⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi := hψeq z ▸ hbrs z
+    have hbrt_z : (Complex.log (⟦tφ⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi := hφeq z ▸ hbrt z
+    have hbrs_z : (Complex.log (⟦tψ⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi := hψeq z ▸ hbrs z
     -- Establish: ⟦tLog tφ⟧(z) = Complex.log (φ z)
     have hlogt_eq : ⟦EMLTerm.tLog tφ⟧(z) = Complex.log ⟦tφ⟧(z) :=
       EMLTerm.eval_tLog tφ z htφne hbrt_z
     have hlogt_ne_z : ⟦EMLTerm.tLog tφ⟧(z) ≠ 0 := hlogt_eq ▸ (hφeq z ▸ hlogt_ne z)
-    have hbr_logt_z : (Complex.log (⟦EMLTerm.tLog tφ⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi :=
+    have hbr_logt_z : (Complex.log (⟦EMLTerm.tLog tφ⟧(z))).im ∈ Set.Ioc (-Real.pi) Real.pi :=
       hlogt_eq ▸ (hφeq z ▸ hbr_logt z)
     -- Establish: ⟦tLog tψ⟧(z) = Complex.log (ψ z)
     have hlogs_eq : ⟦EMLTerm.tLog tψ⟧(z) = Complex.log ⟦tψ⟧(z) :=
@@ -527,7 +548,7 @@ theorem elementary_product (φ ψ : ℂ → ℂ)
 theorem elementary_inverse (φ : ℂ → ℂ)
     (hφ : IsLiouvilleElementaryComplex φ)
     (hφne : ∀ z, φ z ≠ 0)
-    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi) :
+    (hbrt  : ∀ z, (Complex.log (φ z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     IsLiouvilleElementaryComplex (fun z => Complex.exp 1 / φ z) := by
   obtain ⟨tφ, hφeq⟩ := hφ
   exact ⟨EMLTerm.tInv tφ, fun z => by

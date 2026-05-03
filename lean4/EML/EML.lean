@@ -3,6 +3,7 @@
 
 import EML.Basic
 import EML.TRS
+import EML.Sheffer
 import EML.Completeness
 import EML.CurryHoward
 import EML.Expressivity

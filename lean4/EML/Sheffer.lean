@@ -89,29 +89,21 @@ def inv (x : X) : X := S.op x S.e
 /-- Suma del grupo subyacente: x ⊞ y = x ⊟ ι(y) = x ⊟ (y ⊟ 𝑒). -/
 def add (x y : X) : X := S.op x (inv y)
 
--- Lema: inv aplica dos veces es la identidad (involucion)
+-- Lema: inv aplica dos veces es la identidad (involución)
+-- Prueba directa: A1 aplicado dos veces.
+--   inv(inv x) = op(op x e) e
+--             = op x e       [por A1 con y := op x e]
+--             = x            [por A1 con y := x]
 theorem inv_inv (x : X) : inv (inv x) = x := by
   simp only [inv]
-  -- key: op e (op e x) = x
-  have key : S.op S.e (S.op S.e x) = x := by
-    have h := S.A3 x S.e S.e
-    rw [S.A2 S.e, S.A1 x] at h
-    exact h.symm
-  -- expand: op(op x e) e = op e (op e x)
-  have expand : S.op (S.op x S.e) S.e = S.op S.e (S.op S.e x) := by
-    have h2 := S.A3 (S.op x S.e) S.e S.e
-    rw [S.A2 S.e, S.A1 x] at h2
-    exact h2
-  rw [expand, key]
+  rw [S.A1 (S.op x S.e), S.A1 x]
 
 -- Lema: e es el neutro en sentido A2
 theorem e_diagonal : S.op S.e S.e = S.e := S.A2 S.e
 
 -- Lema: la operación es "anti-conmutativa" (A3 con y = 𝑒)
-theorem op_e_anticomm (x z : X) : S.op x (S.op S.e z) = S.op z (S.op S.e x) := by
-  have := S.A3 x S.e z
-  simp only [S.A1] at this
-  exact this
+theorem op_e_anticomm (x z : X) : S.op x (S.op S.e z) = S.op z (S.op S.e x) :=
+  S.A3 x S.e z
 
 -- ============================================================
 -- §3. INSTANCIA: EML COMO ShefferOperator (DOMINIO REAL, FORMAL)

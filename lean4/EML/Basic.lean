@@ -526,7 +526,7 @@ end BootstrappingChain
 according to the EML compiler string (not the direct search).
 
 Note: tSqrt as a composition has K[tSqrt one] = 41; the optimal witness
-with K ≤ 6 requires a direct tree (future work §9B).
+with K ≤ 6 requires a direct tree (future work §9B). -/
 theorem primitives_k_bound :
     K[tExp one] ≤ 6 ∧
     K[tLog one] ≤ 6 ∧

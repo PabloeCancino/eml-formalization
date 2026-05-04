@@ -1,33 +1,33 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/CurryHoward.lean
--- ECT-02: Teoría de Tipos y Correspondencia de Curry-Howard para EML
+-- ECT-02: Teoría de Tipos y CORRESPONDENCE de Curry-Howard para EML
 --
--- Fuente: arXiv:2603.21852v2 (Odrzywolek, 2026)
--- Proyecto: J:\Math_All_in_One\ - Licenciatura en Matemáticas, UAN
+-- Source: arXiv:2603.21852v2 (Odrzywolek, 2026)
+-- Project: J:\Math_All_in_One\ - Mathematics Undergraduate Programme, UAN
 -- ============================================================
 --
--- RESUMEN
+-- SUMMARY
 -- -------
--- Este archivo establece la CORRESPONDENCIA DE CURRY-HOWARD para EML:
+-- Este archivo establece la CORRESPONDENCE DE CURRY-HOWARD para EML:
 --
 --   Términos EML       ↔   Tipos / Proposiciones
---   Evaluaciones       ↔   Pruebas / Habitación
---   Complejidad K      ↔   Profundidad de tipo
+--   Evaluaciones       ↔   proofs / Habitación
+--   Complexity K      ↔   depth de tipo
 --   Operador f(x,y)    ↔   Constructor de tipo (→ / ×)
 --
 -- El tipo EMLType es una representación de proposiciones/tipos
 -- que refleja la gramática de EMLTermV. La función `eml_type_of`
 -- asigna a cada árbol EML un tipo proposicional. El "evaluador de
--- tipos" `EMLProof` demuestra que la evaluación semántica de un
--- árbol EML es la "prueba" de su tipo.
+-- tipos" `EMLProof` demuestra que la Semantic evaluation de un
+-- árbol EML es la "proof" de su tipo.
 --
--- CONTENIDO
+-- CONTENTS
 --   §1  EMLType: tipos EML como proposiciones
 --   §2  Juicio de tipado: asignación árbol → tipo
---   §3  Habitación: toda evaluación produce un "testigo de tipo"
---   §4  Isomorfismo Curry-Howard EML ↔ Lógica Proposicional
+--   §3  Habitación: toda Evaluation produce un "witness de tipo"
+--   §4  isomorphism Curry-Howard EML ↔ Lógica Proposicional
 --   §5  Interpretación vía función eml_eval_type
---   §6  Consecuencias: completitud = completitud proposicional
+--   §6  Consequences: completitud = completitud proposicional
 --   §7  Conexión con EMLTermV y Extended.lean
 -- ============================================================
 
@@ -50,7 +50,7 @@ namespace EML
 --              |  Arrow α β      (función / implicación α → β)
 --              |  Prod  α β      (par / conjunción α ∧ β)
 --
--- La correspondencia fundamental:
+-- La CORRESPONDENCE fundamental:
 --
 --   EMLTerm.one        ↔  EMLType.Base     (constante ⊤)
 --   EMLTermV.var       ↔  EMLType.Var      (variable libre)
@@ -71,7 +71,7 @@ inductive EMLType : Type where
 
 namespace EMLType
 
-/-- Profundidad del tipo EML (análogo a complejidad K de EMLTerm). -/
+/-- depth del tipo EML (análogo a Complexity K de EMLTerm). -/
 def depth : EMLType → ℕ
   | Base       => 0
   | Var        => 0
@@ -125,7 +125,7 @@ def eml_type_of : EMLTermV → EMLType
 @[simp] theorem eml_type_app (t s : EMLTermV) :
     eml_type_of (EMLTermV.app t s) = EMLType.Arrow (eml_type_of t) (eml_type_of s) := rfl
 
-/-- La complejidad K de un término EML coincide con el varCount + leafCount del tipo.
+/-- La Complexity K de un término EML coincide con el varCount + leafCount del tipo.
     En el caso base (sin var), K coincide con la profundidad "pesada". -/
 theorem eml_type_varCount_eq_zero_iff (t : EMLTermV) :
     EMLType.varCount (eml_type_of t) = 0 ↔
@@ -152,20 +152,20 @@ theorem eml_type_varCount_eq_zero_iff (t : EMLTermV) :
         exact h u hu heq
 
 -- ============================================================
--- §3. HABITACIÓN: CADA EVALUACIÓN ES UNA "PRUEBA" DE SU TIPO
+-- §3. HABITACIÓN: CADA Evaluation ES UNA "proof" DE SU TIPO
 -- ============================================================
 --
 -- Curry-Howard central para EML:
 --
---   Un árbol EML cerrado t (sin variables) "habita" su tipo
---   si y solo si su evaluación numérica es un valor definido.
+--   Un árbol EML closed t (sin variables) "habita" su tipo
+--   si y solo si su Evaluation numérica es un valor definido.
 --
 --   "t habita EMLType.Base"  ↔  ereval t z = (1 : ℝ)
 --
 -- Para el operador f(t,s):
---   "app t s habita Arrow α β" ↔ f aplica la "prueba de α" a la "refutación de β"
+--   "app t s habita Arrow α β" ↔ f aplica la "proof de α" a la "refutación de β"
 --
--- La evaluación ereval es el "evaluador de pruebas" de EML.
+-- La Evaluation ereval es el "evaluador de proofs" de EML.
 
 /-- Un árbol EML es "habitado" si se evalúa a un valor real finito. -/
 def EMLTermV.isInhabited (t : EMLTermV) (z : EReal) : Prop :=
@@ -179,10 +179,10 @@ theorem inhabited_var (z : EReal) (r : ℝ) (hz : z = (r : EReal)) :
     EMLTermV.var.isInhabited z := ⟨r, by simp [EMLTermV.isInhabited, EMLTermV.ereval, hz]⟩
 
 -- ============================================================
--- §4. ISOMORFISMO CURRY-HOWARD EML ↔ LÓGICA PROPOSICIONAL
+-- §4. isomorphism CURRY-HOWARD EML ↔ LÓGICA PROPOSICIONAL
 -- ============================================================
 --
--- Tabla de correspondencias principales:
+-- Tabla de CORRESPONDENCEs principales:
 --
 --   EML SINTÁCTICO     │  LÓGICA PROPOSICIONAL    │  SEMÁNTICA
 --   ─────────────────────────────────────────────────────────
@@ -261,14 +261,14 @@ theorem eval_type_arrow_intro (α β : EMLType) (P : Prop)
 --   proposicional intuicionista para el fragmento {⊤, →}.
 --
 -- Dirección 1: árbol → proposición demostrable
---   Si t : EMLTermV es un término cerrado (sin var), entonces
+--   Si t : EMLTermV es un término closed (sin var), entonces
 --   eml_eval_type (eml_type_of t) P es demostrable para toda P.
 --
 -- Dirección 2: proposición demostrable → árbol evaluable
 --   Si α es demostrable en IPL{⊤,→}, existe t : EMLTermV tal que
 --   eml_type_of t = α y ereval t z es finito para todo z real.
 
-/-- Dirección 1: términos EML cerrados tipan proposiciones verdaderas.
+/-- Dirección 1: términos EML closeds tipan proposiciones verdaderas.
     Un árbol sin `var` siempre habita un tipo cuya semántica es True.
 
     Nota: usamos `EMLTerm` (sin variable) aquí para la versión cerrada. -/
@@ -328,19 +328,19 @@ theorem type_of_tInvV (x : EMLTermV) :
 -- tiene un habitante canónico construido inductivamente.
 --
 -- Corolario de ECT-02:
---   La cadena de bootstrapping de Odrzywolek (K=2,4,6) es
+--   La bootstrapping chain de Odrzywolek (K=2,4,6) es
 --   isomorfa a la secuencia de introducciones de tipos:
 --     K=2: tipo Base → Base (función constante, tipo ⊤→⊤)
 --     K=4: tipo Base → (Base→Base) → Base (exp/log, tipo ⊤→(⊤→⊤)→⊤)
 --     K=6: tipo Arrow α (Arrow (Arrow α Base) Base) (completitud)
 
--- Término cerrado de complejidad K = 2 (= tExp one)
+-- Término closed de Complexity K = 2 (= tExp one)
 def witness_K2 : EMLTermV := EMLTermV.tExp EMLTermV.one
 
--- Término cerrado de complejidad K = 4 (= tLog one)
+-- Término closed de Complexity K = 4 (= tLog one)
 def witness_K4 : EMLTermV := EMLTermV.tLog EMLTermV.one
 
--- Tipo de los testigos
+-- Tipo de los witnesses
 theorem type_witness_K2 :
     eml_type_of witness_K2 = EMLType.Arrow EMLType.Base EMLType.Base := by
   simp [witness_K2, EMLTermV.tExp, eml_type_of]
@@ -352,19 +352,19 @@ theorem type_witness_K4 :
   simp [witness_K4, EMLTermV.tLog, eml_type_of]
 
 -- ============================================================
--- §9. RESUMEN: TABLA CURRY-HOWARD EML
+-- §9. SUMMARY: TABLA CURRY-HOWARD EML
 -- ============================================================
 --
 --  ┌────────────────────────────┬──────────────────────────────┬────────────────────────┐
 --  │ CÁLCULO LAMBDA             │ LÓGICA PROPOSICIONAL IPL     │ SEMÁNTICA EML (ereval) │
 --  ├────────────────────────────┼──────────────────────────────┼────────────────────────┤
---  │ λ-término cerrado          │ Prueba                       │ Árbol EMLTerm          │
+--  │ λ-término closed          │ proof                       │ Árbol EMLTerm          │
 --  │ Tipo                       │ Proposición                  │ EMLType                │
 --  │ Variable libre             │ Hipótesis                    │ EMLTermV.var           │
 --  │ Abstracción λx.t           │ Intro de →                   │ EMLTermV.app           │
 --  │ Aplicación t s             │ Modus ponens                 │ ereval (app t s) z     │
 --  │ Tipo base                  │ ⊤ (verum)                    │ EMLType.Base           │
---  │ Inhabitation               │ Demostración                 │ ereval t z ∈ ℝ         │
+--  │ Inhabitation               │ proof                 │ ereval t z ∈ ℝ         │
 --  │ Completitud del λ-cálculo  │ Completitud de IPL           │ Completitud EML (Thm1) │
 --  └────────────────────────────┴──────────────────────────────┴────────────────────────┘
 

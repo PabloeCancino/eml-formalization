@@ -1,27 +1,27 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Basic.lean
--- Formalización del operador EML en Lean 4
--- ECT-08: Implementación EML en Lean 4 (Formalización)
+-- formalizestion of the EML operator in Lean 4
+-- ECT-08: EML implementation in Lean 4 (formalizestion)
 --
--- Fuente: arXiv:2603.21852v2 (Odrzywołek, 2026)
--- Proyecto: J:\Math_All_in_One\ — Licenciatura en Matemáticas, UAN
+-- Source: arXiv:2603.21852v2 (Odrzywołek, 2026)
+-- Project: Math_All_in_One — Mathematics Undergraduate Programme, UAN
 -- ============================================================
 --
--- Este archivo formaliza la estructura (ℂ, 1, eml) donde
+-- This file formalizes the structure (ℂ, 1, eml) where
 --   eml(x, y) = exp(x) − log(y)
--- que genera todas las funciones elementales.
+-- which generates all elementary functions.
 --
--- CONTENIDO
---   §1  Gramática de términos EML (tipo inductivo)
---   §2  Complejidad K (número de hojas)
---   §3  Definiciones intermedias (Exp, Log, operaciones)
---   §4  TRS↑: 10 reglas primarias de expansión
---   §5  Terminación de TRS↑ (K crece monótonamente)
---   §6  Confluencia de TRS↑ (sistema ortogonal)
---   §7  Evaluación semántica sobre ℂ
---   §8  Testigos de la cadena de bootstrapping
---   §9  Cota K ≤ 6 (Teorema de Odrzywołek, versión K)
---   §10 Teorema de completitud (enunciado con sorry)
+-- CONTENTS
+--   §1  EML term grammar (inductive type)
+--   §2  Complexity K (leaf count)
+--   §3  Auxiliary definitions (Exp, Log, operations)
+--   §4  TRS↑: 10 primary expansion rules
+--   §5  TRS↑ termination (K grows strictly monotonically)
+--   §6  TRS↑ confluence (orthogonal system)
+--   §7  Semantic evaluation over ℂ
+--   §8  Witnesses of the bootstrapping chain
+--   §9  K ≤ 6 bound (Odrzywołek's theorem, K version)
+--   §10 Completeness theorem (statement)
 -- ============================================================
 
 import Mathlib.Analysis.SpecialFunctions.Complex.Log
@@ -32,19 +32,19 @@ import Mathlib.Tactic
 namespace EML
 
 -- ============================================================
--- §1. GRAMÁTICA DE TÉRMINOS EML
+-- §1. EML TERM GRAMMAR
 -- ============================================================
 --
--- La gramática libre de contexto:
+-- The context-free grammar:
 --   S → 1 | f(S, S)
 --
--- Es el análogo exacto de Peano:
+-- This is the exact analogue of Peano:
 --   Peano: N → 1 | S(N)
 --   EML:   S → 1 | f(S, S)
 
-/-- Término EML: árbol binario completo con hojas etiquetadas **1**.
-    Ax-S1: `one` es el elemento base.
-    Ax-S2: `app t s` compone dos términos con el operador f.  -/
+/-- EML term: full binary tree with leaves labelled **1**.
+    Ax-S1: `one` is the base element.
+    Ax-S2: `app t s` composes two terms with operator f.  -/
 inductive EMLTerm : Type where
   | one : EMLTerm
   | app : EMLTerm → EMLTerm → EMLTerm
@@ -53,13 +53,13 @@ inductive EMLTerm : Type where
 namespace EMLTerm
 
 -- ============================================================
--- §2. COMPLEJIDAD K
+-- §2. COMPLEXITY K
 -- ============================================================
 --
--- K(t) = número de hojas del árbol t.
--- Definición equivalente a la de Odrzywołek: K = "number of ones".
+-- K(t) = number of leaves in tree t.
+-- Equivalent to Odrzywołek's definition: K = "number of ones".
 
-/-- Complejidad K: número de hojas (símbolos **1**) en el árbol EML.  -/
+/-- Complexity K: number of leaves (symbols **1**) in the EML tree.  -/
 def complexity : EMLTerm → ℕ
   | one       => 1
   | app t s   => t.complexity + s.complexity
@@ -76,7 +76,7 @@ theorem complexity_pos : ∀ t : EMLTerm, 0 < K[t] := by
   | one       => simp [complexity]
   | app t s ht hs => simp [complexity]; omega
 
-/-- La complejidad de un árbol compuesto estrictamente supera a cada parte. -/
+/-- The complexity of a composed tree strictly exceeds that of each part. -/
 theorem complexity_app_lt_left (t s : EMLTerm) : K[t] < K[app t s] := by
   simp only [complexity_app_eq]
   linarith [complexity_pos s]
@@ -86,130 +86,129 @@ theorem complexity_app_lt_right (t s : EMLTerm) : K[s] < K[app t s] := by
   linarith [complexity_pos t]
 
 -- ============================================================
--- §3. DEFINICIONES INTERMEDIAS (Árboles testigo)
+-- §3. AUXILIARY DEFINITIONS (Witness trees)
 -- ============================================================
 --
--- Cada "función elemental" es un árbol EMLTerm concreto.
--- Las reglas de expansión TRS↑ (R1–R27) se instancian aquí
--- como definiciones de árbol.
+-- Each "elementary function" is a concrete EMLTerm tree.
+-- The TRS↑ expansion rules (R1–R27) are instantiated here
+-- as tree definitions.
 
 -- R1: Exp(x) = f(x, 1)   [K = K(x) + 1]
-/-- Árbol testigo para la exponencial: f(x, **1**). -/
+/-- Witness tree for the exponential: f(x, **1**). -/
 def tExp (x : EMLTerm) : EMLTerm := app x one
 
 -- R2: Log(x) = f(1, f(f(1, x), 1))   [K = K(x) + 3]
---   Derivación:
+--   Derivation:
 --     f(1, x)        = e − ln(x)              = u
 --     f(u, 1)        = eᵘ                     = e^(e−ln x) = e·x⁻¹·eᵉ ... = v
 --     f(1, v)        = e − ln(v)
 --                    = e − ln(eᵘ)             = e − u
 --                    = e − (e − ln x)          = ln(x)  ✓
-/-- Árbol testigo para el logaritmo: f(1, f(f(1, x), 1)). -/
+/-- Witness tree for the logarithm: f(1, f(f(1, x), 1)). -/
 def tLog (x : EMLTerm) : EMLTerm := app one (app (app one x) one)
 
--- R4: Minus(x) = −x   [K = 6 en la cadena Odrzywołek]
+-- R4: Minus(x) = −x   [K = 6 in the Odrzywołek chain]
 --
--- La cadena .wl usa: minusEML[x] := subtractEML[Log[1], x]
--- donde Log[1] es el número 0 (Mathematica evalúa Log[1] = 0).
--- Luego subtractEML[0, x] = f(logEML[0], expEML[x]).
--- En ℝ extendido: log(0) = −∞, exp(−∞) = 0, dando:
+-- The .wl chain uses: minusEML[x] := subtractEML[Log[1], x]
+-- where Log[1] = 0 (Mathematica evaluates Log[1] = 0).
+-- Then subtractEML[0, x] = f(logEML[0], expEML[x]).
+-- In extended ℝ: log(0) = −∞, exp(−∞) = 0, giving:
 --   f(log(0), exp(x)) = exp(log(0)) − log(exp(x)) = 0 − x = −x  ✓
 --
--- En Lean/Mathlib (ℝ): Real.log 0 = 0 por convenio (no −∞).
--- Por tanto tMinus con argumento 'one' da 1 − x, no −x.
--- Ver: EML/Real.lean §5 (reval_tMinus_is_one_sub).
+-- In Lean/Mathlib (ℝ): Real.log 0 = 0 by convention (not −∞).
+-- Therefore tMinus with argument 'one' gives 1 − x, not −x.
+-- See: EML/Real.lean §5 (reval_tMinus_is_one_sub).
 --
--- OBSTRUCCIÓN DE CAMPO DE HARDY (Paper P3, Thm. 2 — Lamharzi Alaoui 2026):
--- Los cálculos deben realizarse en el dominio complejo porque generar
--- constantes como i y π requiere evaluar ln(−1) = iπ.
--- Esto no es un accidente: el Thm. 2 del Paper P3 demuestra que
--- toda función en LE₂ (logarítmico-exponencial real) que se pueda
--- expresar como término unario del clon de cualquier operador binario
--- real tipo EML pertenece en realidad a LE₁ y es eventualmente
--- monótona. En particular, sin x y cos x son IMPOSIBLES en el
--- dominio real logarítmico-exponencial, lo que fuerza el uso de ℂ.
+-- HARDY FIELD OBSTRUCTION (Paper P3, Thm. 3.3 — Lamharzi Alaoui 2026):
+-- Computations must be carried out in the complex domain because generating
+-- constants such as i and π requires evaluating ln(−1) = iπ.
+-- This is not accidental: Thm. 3.3 of P3 proves that every function
+-- in LE₂ (real logarithmico-exponential) expressible as a unary term
+-- in the clone of any real binary EML-type operator belongs to LE₁
+-- and is eventually monotone. In particular, sin x and cos x are
+-- IMPOSSIBLE in the real logarithmico-exponential domain, forcing ℂ.
 --
--- La definición del árbol es correcta como expresión sintáctica;
--- su semántica real difiere de −x. La semántica correcta de −x
--- requiere ℂ o ℝ extendido.
-/-- Árbol testigo para Minus (TRS↑, R4): f(Log(1), Exp(x)).
-    Semántica en ℝ extendido: −x. En Lean/ℝ: 1 − x. -/
+-- The tree definition is correct as a syntactic expression;
+-- its real semantics differs from −x. The exact semantics of −x
+-- requires ℂ or extended ℝ.
+/-- Witness tree for Minus (TRS↑, R4): f(Log(1), Exp(x)).
+    Semantics in extended ℝ: −x. In Lean/ℝ: 1 − x. -/
 def tMinus (x : EMLTerm) : EMLTerm :=
   app (tLog one) (tExp x)
 
 -- R3: Subtract(x, y) = f(Log(x), Exp(y))   [K = K(x) + K(y) + 4]
---   Derivación: f(ln x, eʸ) = e^(ln x) − ln(eʸ) = x − y  ✓
-/-- Árbol testigo para la resta: f(Log(x), Exp(y)). -/
+--   Derivation: f(ln x, eʸ) = e^(ln x) − ln(eʸ) = x − y  ✓
+/-- Witness tree for subtraction: f(Log(x), Exp(y)). -/
 def tSubtract (x y : EMLTerm) : EMLTerm :=
   app (tLog x) (tExp y)
 
 -- R5: Plus(x, y) = Subtract(x, Minus(y))
-/-- Árbol testigo para la suma. -/
+/-- Witness tree for addition. -/
 def tPlus (x y : EMLTerm) : EMLTerm :=
   tSubtract x (tMinus y)
 
 -- R6: Inv(x) = Exp(Minus(Log(x)))
-/-- Árbol testigo para el inverso multiplicativo. -/
+/-- Witness tree for the multiplicative inverse. -/
 def tInv (x : EMLTerm) : EMLTerm :=
   tExp (tMinus (tLog x))
 
 -- R7: Times(x, y) = Exp(Plus(Log(x), Log(y)))
---   Derivación: e^(ln x + ln y) = x·y  ✓
-/-- Árbol testigo para el producto. -/
+--   Derivation: e^(ln x + ln y) = x·y  ✓
+/-- Witness tree for multiplication. -/
 def tTimes (x y : EMLTerm) : EMLTerm :=
   tExp (tPlus (tLog x) (tLog y))
 
--- La constante 2 como árbol EML
-/-- Testigo para la constante 2: Plus(1, 1). -/
+-- Constant 2 as an EML tree
+/-- Witness for the constant 2: Plus(1, 1). -/
 def tTwo : EMLTerm := tPlus one one
 
 -- R11: Divide(x, y) = Times(x, Inv(y))
-/-- Árbol testigo para la división. -/
+/-- Witness tree for division. -/
 def tDivide (x y : EMLTerm) : EMLTerm := tTimes x (tInv y)
 
 -- R12: Half(x) = Divide(x, 2)
-/-- Árbol testigo para x/2. -/
+/-- Witness tree for x/2. -/
 def tHalf (x : EMLTerm) : EMLTerm := tDivide x tTwo
 
 -- R8: Sqr(x) = Times(x, x)
-/-- Árbol testigo para x². -/
+/-- Witness tree for x². -/
 def tSqr (x : EMLTerm) : EMLTerm := tTimes x x
 
 -- R9: Sqrt(x) = Exp(Half(Log(x)))
-/-- Árbol testigo para √x. -/
+/-- Witness tree for √x. -/
 def tSqrt (x : EMLTerm) : EMLTerm := tExp (tHalf (tLog x))
 
 -- R13: Avg(x, y) = Half(Plus(x, y))
-/-- Árbol testigo para (x+y)/2. -/
+/-- Witness tree for (x+y)/2. -/
 def tAvg (x y : EMLTerm) : EMLTerm := tHalf (tPlus x y)
 
 -- R10: Power(x, y) = Exp(Times(y, Log(x)))
-/-- Árbol testigo para xʸ. -/
+/-- Witness tree for xʸ. -/
 def tPower (x y : EMLTerm) : EMLTerm :=
   tExp (tTimes y (tLog x))
 
 -- R14: Hypot(x, y) = Sqrt(Plus(Sqr(x), Sqr(y)))
-/-- Árbol testigo para √(x²+y²). -/
+/-- Witness tree for √(x²+y²). -/
 def tHypot (x y : EMLTerm) : EMLTerm :=
   tSqrt (tPlus (tSqr x) (tSqr y))
 
 -- R15: Cosh(x) = Avg(Exp(x), Exp(Minus(x)))
-/-- Árbol testigo para cosh. -/
+/-- Witness tree for cosh. -/
 def tCosh (x : EMLTerm) : EMLTerm :=
   tAvg (tExp x) (tExp (tMinus x))
 
 -- R16: Sinh(x) = Hypot(i, Cosh(x))
--- Nota: la constante i = Exp(Half(Log(−1))); aquí usamos one como marcador
--- hasta que tengamos acceso al árbol de i.
+-- Note: constant i = Exp(Half(Log(−1))); one is used as a placeholder
+-- until the i witness tree is available.
 
 -- R17: Cos(x) = Cosh(Divide(x, i))
 -- R18: Tanh(x) = Divide(Sinh(x), Cosh(x))
 -- R19: Tan(x) = Hypot(i, Inv(Cos(x)))
 -- R20: Sin(x) = Cos(Subtract(x, Half(π)))
--- [Las funciones que dependen de i y π se completan tras definir sus testigos]
+-- [Functions depending on i and π are completed after defining their witnesses]
 
 -- ============================================================
--- §4. COMPLEJIDADES VERIFICADAS (K mínimas de la Tabla 1)
+-- §4. VERIFIED COMPLEXITIES (minimum K from Table 1)
 -- ============================================================
 
 @[simp]
@@ -229,19 +228,19 @@ theorem complexity_tSubtract (x y : EMLTerm) :
     K[tSubtract x y] = K[x] + K[y] + 4 := by
   simp [tSubtract, complexity_tLog, complexity_tExp]; ring
 
--- Verificación: K(e) = 2
+-- Verification: K(e) = 2
 theorem complexity_e : K[tExp one] = 2 := by simp [tExp, complexity]
 
--- Verificación: K(Log) = 4 (por un argumento de árbol variable)
+-- Verification: K(Log) = 4 (by a variable-tree argument)
 theorem complexity_tLog_one : K[tLog one] = 4 := by simp [tLog, complexity]
 
 -- ============================================================
--- §5. TRS↑ TERMINA
+-- §5. TRS↑ TERMINATES
 -- ============================================================
 --
--- Medida de terminación: la función K.
--- Cada aplicación de una regla de expansión aumenta K estrictamente.
--- Por tanto TRS↑ no puede ciclar (es terminante).
+-- Termination measure: the function K.
+-- Each application of an expansion rule strictly increases K.
+-- Therefore TRS↑ cannot cycle (it is terminating).
 
 theorem trs_Exp_terminates (x : EMLTerm) : K[x] < K[tExp x] := by
   simp [complexity_tExp]
@@ -256,8 +255,8 @@ theorem trs_Subtract_terminates (x y : EMLTerm) :
     K[x] + K[y] < K[tSubtract x y] := by
   simp only [complexity_tSubtract]; omega
 
-/-- Teorema de terminación de TRS↑: la complejidad K crece estrictamente
-    en toda expansión, garantizando que el proceso termina. -/
+/-- TRS↑ termination theorem: complexity K grows strictly
+    under every expansion, guaranteeing termination. -/
 theorem trs_up_terminates :
     ∀ x : EMLTerm,
       K[x] < K[tExp x] ∧
@@ -266,34 +265,34 @@ theorem trs_up_terminates :
   ⟨trs_Exp_terminates x, trs_Log_terminates x, trs_Minus_terminates x⟩
 
 -- ============================================================
--- §6. TRS↑ ES CONFLUENTE
+-- §6. TRS↑ IS CONFLUENT
 -- ============================================================
 --
--- Los patrones del TRS↑ son ortogonales: cada nombre funcional
--- (Exp, Log, Minus, Subtract, ...) aparece en exactamente una
--- regla de expansión. No hay solapamiento → no hay pares críticos
--- → el sistema es confluente (tiene formas normales únicas).
+-- The TRS↑ patterns are orthogonal: each functional name
+-- (Exp, Log, Minus, Subtract, ...) appears in exactly one
+-- expansion rule. No overlap → no critical pairs
+-- → the system is confluent (unique normal forms).
 --
--- La demostración formal requiere definir el TRS como relación de
--- reescritura y verificar la condición de ortogonalidad.
--- Aquí la enunciamos como proposición (la demostración detallada
--- se encuentra en §6B del documento EML_Sistema_Reescritura.md).
+-- The formal proof requires defining the TRS as a rewrite relation
+-- and verifying the orthogonality condition.
+-- Stated here as a proposition (detailed proof in
+-- §6B of EML_Sistema_Reescritura.md).
 
--- El sistema de expansión TRS↑ es ortogonal, luego confluente.
--- (Proposición C1 de EML_Sistema_Reescritura.md)
+-- The TRS↑ expansion system is orthogonal, hence confluent.
+-- (Proposition C1 of EML_Sistema_Reescritura.md)
 -- theorem trs_up_confluent : Confluent TRS_up := by
 --   apply confluent_of_orthogonal
---   exact trs_up_orthogonal  -- los patrones son disjuntos
+--   exact trs_up_orthogonal  -- patterns are disjoint
 
 -- ============================================================
--- §7. EVALUACIÓN SEMÁNTICA SOBRE ℂ
+-- §7. SEMANTIC EVALUATION OVER ℂ
 -- ============================================================
 --
--- La valuación semántica asigna a cada árbol EMLTerm una función
--- ℂ → ℂ, usando Complex.exp y Complex.log de Mathlib.
+-- The semantic valuation assigns to each EMLTerm tree a function
+-- ℂ → ℂ, using Complex.exp and Complex.log from Mathlib.
 
--- Evaluación semántica: ⟦t⟧(z) es la función representada por
--- el árbol EMLTerm `t`, evaluada en el punto z : ℂ.
+-- Semantic evaluation: ⟦t⟧(z) is the function represented by
+-- the EMLTerm tree `t`, evaluated at the point z : ℂ.
 noncomputable def eval (t : EMLTerm) (z : ℂ) : ℂ :=
   match t with
   | one       => 1
@@ -301,34 +300,34 @@ noncomputable def eval (t : EMLTerm) (z : ℂ) : ℂ :=
 
 notation "⟦" t "⟧(" z ")" => EMLTerm.eval t z
 
--- Lemas básicos de evaluación
+-- Basic evaluation lemmas
 @[simp]
 theorem eval_one (z : ℂ) : ⟦one⟧(z) = 1 := rfl
 
 theorem eval_app (t s : EMLTerm) (z : ℂ) :
     ⟦app t s⟧(z) = Complex.exp (⟦t⟧(z)) - Complex.log (⟦s⟧(z)) := rfl
 
--- R1 semántico: ⟦tExp(t)⟧(z) = exp(⟦t⟧(z))
+-- R1 semantic: ⟦tExp(t)⟧(z) = exp(⟦t⟧(z))
 theorem eval_tExp (t : EMLTerm) (z : ℂ) :
     ⟦tExp t⟧(z) = Complex.exp (⟦t⟧(z)) := by
   simp only [tExp, eval_app, eval_one, Complex.log_one, sub_zero]
 
--- R2 semántico: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
--- Sea w = exp(1) − log ⟦t⟧(z).  Como (exp 1 : ℂ).im = 0, tenemos
--- w.im = −(log ⟦t⟧(z)).im.  Complex.log_exp requiere w.im ∈ Ioc(−π,π).
+-- R2 semantic: ⟦tLog(t)⟧(z) = log(⟦t⟧(z))
+-- Let w = exp(1) − log ⟦t⟧(z). Since (exp 1 : ℂ).im = 0, we have
+-- w.im = −(log ⟦t⟧(z)).im. Complex.log_exp requires w.im ∈ Ioc(−π,π).
 --
--- REGLA ARQUITECTÓNICA Ioo/Ioc (invariante del proyecto):
---   • eval_tLog  recibe  hbr : Ioo(-π, π)   [abierto en AMBOS extremos]
---     Razón: w.im = -im. Si im ∈ Ioo → -im ∈ Ioo ⊆ Ioc ✓
---            Si im ∈ Ioc (im = π posible) → -im = -π ∉ Ioc(-π,π] ✗
---   • log_exp    recibe  h ∈ Ioc(-π, π)      [abierto solo en izquierda]
---     Razón: es la API de Mathlib (h₁ : -π < w.im, h₂ : w.im ≤ π)
---   • Resultados de tLog y coordenadas Im directas usan Ioc.
+-- ARCHITECTURAL RULE Ioo/Ioc (project invariant):
+--   • eval_tLog  receives  hbr : Ioo(-π, π)   [open on BOTH sides]
+--     Reason: w.im = -im. If im ∈ Ioo → -im ∈ Ioo ⊆ Ioc ✓
+--             If im ∈ Ioc (im = π allowed) → -im = -π ∉ Ioc(-π,π] ✗
+--   • log_exp    receives  h ∈ Ioc(-π, π)      [open only on the left]
+--     Reason: this is the Mathlib API (h₁ : -π < w.im, h₂ : w.im ≤ π)
+--   • Results of tLog and direct Im coordinates use Ioc.
 --
--- CONSECUENCIA: todo teorema que pasa su hipótesis de rama a eval_tLog
--- (directamente o via eval_tSubtract / eval_tPlus / eval_tInv / eval_tTimes)
--- DEBE declarar esa hipótesis con Ioo. Solo se usa Ioc cuando la hipótesis
--- va directamente a log_exp o como resultado de una evaluación de tLog.
+-- CONSEQUENCE: every theorem that passes its branch hypothesis to eval_tLog
+-- (directly or via eval_tSubtract / eval_tPlus / eval_tInv / eval_tTimes)
+-- MUST declare that hypothesis with Ioo. Ioc is only used when the hypothesis
+-- goes directly to log_exp or as the result of a tLog evaluation.
 theorem eval_tLog (t : EMLTerm) (z : ℂ)
     (_hz : ⟦t⟧(z) ≠ 0)
     (hbr : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
@@ -340,13 +339,13 @@ theorem eval_tLog (t : EMLTerm) (z : ℂ)
       have h : (1 : ℂ) = ((1 : ℝ) : ℂ) := by norm_cast
       rw [h]; exact Complex.exp_ofReal_im 1
     simp only [Complex.sub_im, hexp1im, zero_sub]
-    -- CONCLUSIÓN ARQUITECTÓNICA: eval_tLog debe usar Ioo para poder negar.
+    -- ARCHITECTURAL CONCLUSION: eval_tLog must use Ioo to allow negation.
     exact ⟨by linarith [hbr.2], by linarith [hbr.1]⟩
   simp only [Complex.log_exp hw_im.1 hw_im.2]
   ring
 
 
--- R3 semántico: ⟦tSubtract(t, s)⟧(z) = ⟦t⟧(z) - ⟦s⟧(z)
+-- R3 semantic: ⟦tSubtract(t, s)⟧(z) = ⟦t⟧(z) - ⟦s⟧(z)
 theorem eval_tSubtract (t s : EMLTerm) (z : ℂ)
     (ht   : ⟦t⟧(z) ≠ 0)
     (hbrt : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
@@ -360,7 +359,7 @@ theorem eval_tSubtract (t s : EMLTerm) (z : ℂ)
 
 -- R4 semántico: ⟦tMinus(t)⟧(z) = -⟦t⟧(z)
 -- tMinus t = app (tLog one) (tExp t)
--- Prueba: ⟦tLog one⟧(z) = log(1) = 0; luego exp(0) - log(exp(⟦t⟧(z))) = 1 - 0 - ⟦t⟧(z)
+-- proof: ⟦tLog one⟧(z) = log(1) = 0; luego exp(0) - log(exp(⟦t⟧(z))) = 1 - 0 - ⟦t⟧(z)
 -- Pero exp(0) = 1, log(exp(w)) = w cuando im(w) ∈ Ioc(−π,π).
 -- Resultado: 1 - ... — ESPERA: la definición de tMinus es app (tLog one) (tExp t),
 -- así ⟦tMinus t⟧(z) = exp(⟦tLog one⟧(z)) - log(⟦tExp t⟧(z))
@@ -452,16 +451,16 @@ theorem eval_tTimes (t s : EMLTerm) (z : ℂ)
   ring
 
 -- ============================================================
--- §8. TESTIGOS DE LA CADENA DE BOOTSTRAPPING
+-- §8. witnesses DE LA bootstrapping chain
 -- ============================================================
 --
 -- Cada función elemental de la Tabla 1 de Odrzywołek tiene un
--- testigo concreto: un árbol EMLTerm con K ≤ 6.
--- Esta sección verifica la complejidad de los testigos principales.
+-- witness concreto: un árbol EMLTerm con K ≤ 6.
+-- Esta sección verifica la complejidad de los witnesses principales.
 
 section BootstrappingChain
 
--- Testigo 1: la constante e
+-- witness 1: la constante e
 /-- t_e es el árbol que representa la constante e. -/
 def t_e : EMLTerm := tExp one
 
@@ -470,13 +469,13 @@ theorem t_e_complexity : K[t_e] = 2 := by simp [t_e, tExp, complexity]
 theorem t_e_eval (z : ℂ) : ⟦t_e⟧(z) = Complex.exp 1 := by
   simp [t_e, eval_tExp, eval_one]
 
--- Testigo 3: Log(x) con K=4
+-- witness 3: Log(x) con K=4
 def t_Log_template : EMLTerm := tLog one  -- instancia en x=1
 
 theorem t_Log_template_complexity : K[t_Log_template] = 4 := by
   simp [t_Log_template, complexity_tLog]
 
--- Testigo 4: Subtract — árbol con K=4 (ambos argumentos de hoja)
+-- witness 4: Subtract — árbol con K=4 (ambos argumentos de hoja)
 def t_Subtract_11 : EMLTerm := tSubtract one one
 
 theorem t_Subtract_11_complexity : K[t_Subtract_11] = 6 := by
@@ -499,10 +498,10 @@ theorem t_Times_11_complexity : K[t_Times_11] = 18 := by
 end BootstrappingChain
 
 -- ============================================================
--- §9. COTA K ≤ 6 — TEOREMA DE ODRZYWOŁEK EN LENGUAJE K
+-- §9. K bound ≤ 6 — TEOREMA DE ODRZYWOŁEK EN LENGUAJE K
 -- ============================================================
 --
--- El resultado central del artículo (Odrzywołek v2, 2026, Tabla 4)
+-- El CENTRAL RESULT del artículo (Odrzywołek v2, 2026, Tabla 4)
 -- afirma que toda función elemental de la Tabla 1 tiene K_EML ≤ 6
 -- según el COMPILADOR EML (cadena de reducción estándar).
 --
@@ -510,15 +509,15 @@ end BootstrappingChain
 --
 --   (a) COTA DEL COMPILADOR EML: K obtenido siguiendo la cadena de
 --       bootstrapping estándar de Odrzywołek. Esta es la cota que
---       prueban los testigos tExp, tLog, tMinus, etc.
+--       proofn los witnesses tExp, tLog, tMinus, etc.
 --       Ejemplo: K(negación) = 57 según el compilador.
 --
 --   (b) COTA DE BÚSQUEDA DIRECTA: K obtenido por búsqueda
---       exhaustiva sobre todos los árboles de profundidad creciente.
+--       exhaustiva sobre todos los árboles de depth creciente.
 --       Es óptima pero no constructiva en general.
 --       Ejemplo: K(negación) = 15 según búsqueda directa (Tabla 4, col. derecha).
 --
--- Los teoremas de este §9 prueban la cota (a) del compilador.
+-- Los teoremas de este §9 proofn la cota (a) del compilador.
 -- La cota (b) es un problema de búsqueda óptima abierto.
 
 -- Enumeración de las primitivas con su K mínimo
@@ -538,23 +537,23 @@ theorem primitives_k_bound :
   · simp only [complexity_tMinus, complexity_one_eq]; omega  -- 6 ≤ 6
 
 -- ============================================================
--- §10. TEOREMA DE COMPLETITUD (ENUNCIADO)
+-- §10. Completeness theorem (statement)
 -- ============================================================
 --
 -- Este es el teorema central abierto: toda función elemental es
 -- representable como árbol EMLTerm.
 --
--- La cadena de bootstrapping (§8) proporciona los testigos
--- constructivos; la verificación formal se completa en
--- EML/Completeness.lean (trabajo futuro).
+-- La bootstrapping chain (§8) proporciona los witnesses
+-- constructivos; la Verification formal se completa en
+-- EML/Completeness.lean (future work).
 
--- Abstracción de "función elemental" — requiere formalizar el
+-- Abstracción de "función elemental" — requiere formalizesr el
 -- Campo de Liouville; aquí se usa como axioma/hipótesis.
 
 -- class ElementaryFunction (f : ℂ → ℂ) : Prop where
 --   in_liouville : f ∈ LiouvilleField
 
-/-- Enunciado del Teorema de Odrzywołek en Lean 4.
+/-- statement del Teorema de Odrzywołek en Lean 4.
     Los testigos constructivos existen (cadena de bootstrapping);
     la demostración formal es trabajo en progreso. -/
 theorem eml_completeness_statement :
@@ -569,7 +568,7 @@ theorem eml_completeness_statement :
 -- ============================================================
 --
 -- La inducción estructural sobre EMLTerm es el principal mecanismo
--- de demostración en este sistema.
+-- de proof en este sistema.
 
 /-- Principio de inducción para EMLTerm: análogo al de Peano. -/
 theorem eml_induction {P : EMLTerm → Prop}
@@ -614,7 +613,7 @@ theorem eml_induction_k {P : ℕ → Prop}
 -- Para n=4: 5 árboles
 -- etc.
 
-/-- Auxiliar con fuel: recursión estructural sobre fuel (≥ profundidad máxima = n-1). -/
+/-- Auxiliar con fuel: recursión estructural sobre fuel (≥ depth máxima = n-1). -/
 private def termsOfComplexityFuel : ℕ → ℕ → List EMLTerm
   | _, 0 => []
   | _, 1 => [one]

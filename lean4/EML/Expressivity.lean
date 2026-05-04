@@ -1,25 +1,25 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Expressivity.lean
 -- ECT-07: Límites de Expresividad de EML
 --
--- Fuente: arXiv:2603.21852v2 (Odrzywolek, 2026)
--- Proyecto: J:\Math_All_in_One\ - Licenciatura en Matemáticas, UAN
+-- Source: arXiv:2603.21852v2 (Odrzywolek, 2026)
+-- Project: J:\Math_All_in_One\ - Mathematics Undergraduate Programme, UAN
 -- ============================================================
 --
--- RESUMEN
+-- SUMMARY
 -- -------
--- Este archivo formaliza los LÍMITES de lo que EML puede expresar.
--- Establece la frontera entre el campo elemental E (generado por {1,f})
+-- Este archivo formalizes los LÍMITES de lo que EML puede expresar.
+-- Establece la frontera entre el elementary field E (generado por {1,f})
 -- y las funciones especiales (erf, Ei, ζ, Γ, Bessel, ...) que están
 -- fuera de E y tienen K_EML = ∞.
 --
--- CONTENIDO
+-- CONTENTS
 --   §1  Predicado de elementalidad: "expresable por EML"
---   §2  Cerradura: E es cerrado bajo las operaciones de f
+--   §2  closure: E es closed bajo las operaciones de f
 --   §3  La barrera K=8: cota superior para funciones elementales
 --   §4  Funciones especiales: no-habitables con K finito
 --   §5  ζ_N como familia elemental que aproxima ζ
---   §6  El teorema de Liouville (enunciado formal)
+--   §6  El teorema de Liouville (statement formal)
 --   §7  Límites como extensión más allá de E
 --   §8  Relación con ECT-02 (tipos no habitables)
 -- ============================================================
@@ -46,7 +46,7 @@ open EMLTerm
 -- que la representa (vía reval en Basic.lean) o, más generalmente,
 -- un árbol EMLTermV que la representa con la variable libre.
 --
--- Formalizamos la elementalidad como existencia de un árbol testigo.
+-- formalizesmos la elementalidad como existencia de un witness tree.
 
 /-- Una función f : ℝ → ℝ es EML-elemental si existe un árbol
     EMLTermV y un valor de entrada tal que la evaluación coincide
@@ -54,19 +54,19 @@ open EMLTerm
 def IsEMLElementary (φ : ℝ → ℝ) : Prop :=
   ∃ (t : EMLTermV), ∀ x : ℝ, EMLTermV.ereval t (x : EReal) = (φ x : EReal)
 
-/-- La función constante 1 es EML-elemental (testigo: `one`). -/
+/-- La función constante 1 es EML-elemental (witness: `one`). -/
 theorem elementary_const_one : IsEMLElementary (fun _ => 1) := by
   use EMLTermV.one
   intro x
   simp [EMLTermV.ereval]
 
-/-- La función identidad es EML-elemental (testigo: `var`). -/
+/-- La función identidad es EML-elemental (witness: `var`). -/
 theorem elementary_id : IsEMLElementary id := by
   use EMLTermV.var
   intro x
   simp [EMLTermV.ereval]
 
-/-- La función exp es EML-elemental (testigo: `tExp var`). -/
+/-- La función exp es EML-elemental (witness: `tExp var`). -/
 theorem elementary_exp : IsEMLElementary Real.exp := by
   use EMLTermV.tExp EMLTermV.var
   intro x
@@ -83,14 +83,14 @@ theorem elementary_log : IsEMLElementary Real.log := by
   simp [EMLTermV.ereval_tLog]
 
 -- ============================================================
--- §2. CERRADURA DE E BAJO COMPOSICIÓN EML
+-- §2. closure DE E BAJO COMPOSICIÓN EML
 -- ============================================================
 --
--- El campo E es cerrado bajo la operación f(φ,ψ) = exp(φ) - log(ψ).
+-- El campo E es closed bajo la operación f(φ,ψ) = exp(φ) - log(ψ).
 -- En términos de EMLTermV: si φ y ψ son elementales, también lo es
 -- la función x ↦ exp(φ(x)) - log(ψ(x)).
 
-/-- El campo elemental es cerrado bajo el operador f = exp - log,
+/-- El elementary field es closed bajo el operador f = exp - log,
     asumiendo que ψ(x) > 0 para que log(ψ(x)) sea el logaritmo real. -/
 theorem elementary_closed_under_f (φ ψ : ℝ → ℝ)
     (hφ : IsEMLElementary φ) (hψ : IsEMLElementary ψ)
@@ -102,7 +102,7 @@ theorem elementary_closed_under_f (φ ψ : ℝ → ℝ)
   intro x
   -- ⟦app tφ tψ⟧(x) = emlExp(⟦tφ⟧ x) - emlLog(⟦tψ⟧ x)
   simp only [EMLTermV.ereval_app, EMLTermV.ereval]
-  -- Reescribir usando los testigos
+  -- Reescribir usando los witnesses
   rw [hφeq x, hψeq x]
   -- Con ψ(x) > 0, emlLog en EReal coincide con Real.log
   have hpos : (0 : EReal) < (ψ x : EReal) := by
@@ -110,10 +110,10 @@ theorem elementary_closed_under_f (φ ψ : ℝ → ℝ)
   simp [emlExp_real, emlLog_pos hpos]
 
 -- ============================================================
--- §2b. LEMAS DE CERRADURA ADICIONALES
+-- §2b. LEMAS DE closure ADICIONALES
 -- ============================================================
 --
--- Completamos la cerradura de E bajo las operaciones de campo:
+-- Completamos la closure de E bajo las operaciones de campo:
 -- suma, negación, multiplicación por escalar, constantes reales.
 
 /-- Axiom de constante: toda función constante real es EML-elemental.
@@ -181,12 +181,12 @@ theorem elementary_smul (c : ℝ) (hc : 0 < c) (φ : ℝ → ℝ)
 -- ============================================================
 --
 -- El Teorema de Odrzywolek establece que toda función elemental
--- tiene un árbol EML de complejidad K ≤ 6. K = 8 es la barrera:
+-- tiene un árbol EML de Complexity K ≤ 6. K = 8 es la barrera:
 -- ninguna función elemental necesita K = 8 o más.
 --
--- Formalizamos la versión débil: existe una cota universal K_max.
+-- formalizesmos la versión débil: existe una cota universal K_max.
 
-/-- La complejidad K de los árboles testigo de funciones elementales
+/-- La Complexity K de los Witness trees de funciones elementales
     está acotada por 6. Esta es la versión débil del Thm. de Odrzywolek.
 
     La versión fuerte (K ≤ 6 para toda función elemental) es exactamente
@@ -209,8 +209,8 @@ def K_MAX_ELEMENTARY : ℕ := 6
 -- Las funciones especiales (erf, Ei, ζ, Γ) no son EML-elementales.
 -- No existe ningún árbol EMLTermV finito que las represente exactamente.
 --
--- Formalizamos esto como la NEGACIÓN de IsEMLElementary.
--- La prueba formal requiere el Teorema de Liouville (§6).
+-- formalizesmos esto como la NEGACIÓN de IsEMLElementary.
+-- La proof formal requiere el Teorema de Liouville (§6).
 
 /-- Axiom de Liouville para erf: la función error NO es EML-elemental.
 
@@ -238,7 +238,7 @@ theorem not_elementary_erf :
     No formalizado en Mathlib 4. -/
 axiom liouville_li_not_eml :
     ¬ IsEMLElementary (fun x => Real.log (Real.log x))
-    -- proxy de li; el enunciado preciso requiere integral de Cauchy
+    -- proxy de li; el statement preciso requiere integral de Cauchy
 
 /-- π(x) no es EML-elemental.
     Consecuencia de que li(x) ∉ E vía la aproximación π(x) ~ li(x).
@@ -260,7 +260,7 @@ theorem not_elementary_prime_counting :
 -- La suma parcial ζ_N(s) = Σ_{n=1}^N n^{-s} es elemental para cada N.
 -- La serie completa ζ(s) = lim_{N→∞} ζ_N(s) no es elemental.
 --
--- Esto ilustra que el campo elemental E NO es cerrado bajo límites.
+-- Esto ilustra que el elementary field E NO es closed bajo límites.
 
 /-- Suma parcial de ζ hasta N. Es elemental para cada N fijo. -/
 noncomputable def zeta_partial (s : ℝ) (N : ℕ) : ℝ :=
@@ -269,16 +269,16 @@ noncomputable def zeta_partial (s : ℝ) (N : ℕ) : ℝ :=
 -- Cada término n^{-s} = exp(-s·log n) es elemental
 -- Cada término n^{-s} = exp(-s·log n) es elemental.
 --
--- Demostración:
+-- proof:
 --   exp(-s * log n) = exp((-log n) * s)
 --   La función s ↦ (-log n) * s es el producto de la constante
 --   (-log n) ∈ ℝ por la función identidad (elemental).
 --   Por eml_mul_const_elementary, esta función es elemental.
---   Por cerradura bajo exp, la composición también es elemental.
+--   Por closure bajo exp, la composición también es elemental.
 --
 -- Nota: NO usamos tTimesV directamente porque requiere positividad
 -- de los argumentos bajo log (barrera técnica de EReal).  Usamos
--- eml_mul_const_elementary, que formaliza la cerradura algebraica.
+-- eml_mul_const_elementary, que formalizes la closure algebraica.
 theorem zeta_term_elementary (n : ℕ) (hn : 0 < n) :
     IsEMLElementary (fun s => Real.exp (-s * Real.log n)) := by
   -- Paso 1: la función s ↦ (-Real.log n) * s es elemental
@@ -314,7 +314,7 @@ theorem zeta_partial_elementary (N : ℕ) :
       simp [zeta_partial, Finset.sum_range_succ]
     -- Convertir la función vía la ecuación
     simp_rw [hsucc]
-    -- Aplicar cerradura bajo suma (usando sorry en elementary_smul internamente)
+    -- Aplicar closure bajo suma (usando sorry en elementary_smul internamente)
     -- La suma de elementales es elemental con condición de no-negatividad
     -- Nota: zeta_partial s n ≥ 0 porque es suma de exp (siempre > 0)
     apply elementary_sum
@@ -360,15 +360,15 @@ theorem zeta_partial_converges (s : ℝ) (hs : 1 < s) :
 
 
 -- ============================================================
--- §6. EL TEOREMA DE LIOUVILLE (ENUNCIADO FORMAL)
+-- §6. EL TEOREMA DE LIOUVILLE (statement FORMAL)
 -- ============================================================
 --
--- Formalizamos el enunciado del Teorema de Liouville-Risch.
--- La prueba completa requiere la teoría de campos diferenciales
+-- formalizesmos el statement del Teorema de Liouville-Risch.
+-- La proof completa requiere la teoría de campos diferenciales
 -- (Differential Algebra de Ritt-Kolchin), que está fuera del alcance
--- actual de Mathlib 4. Lo dejamos como sorry con el enunciado preciso.
+-- actual de Mathlib 4. Lo dejamos como sorry con el statement preciso.
 
-/-- Campo elemental de Liouville: predicado de elementalidad vía torre.
+/-- elementary field de Liouville: predicado de elementalidad vía torre.
     Una función φ : ℝ → ℝ es elemental si está en algún nivel
     de la Torre de Liouville L_n. -/
 def IsLiouvilleElementary (φ : ℝ → ℝ) : Prop :=
@@ -405,7 +405,7 @@ axiom liouville_integration_theorem_ax
       ∀ x, g x = v 0 x + Finset.sum Finset.univ
         (fun i => c i * Real.log (v i.castSucc x))
 
-/-- Teorema de Liouville para integrales (enunciado via axiom). -/
+/-- Teorema de Liouville para integrales (statement via axiom). -/
 theorem liouville_integration_theorem
     (f : ℝ → ℝ) (g : ℝ → ℝ)
     (hf : IsLiouvilleElementary f)
@@ -434,11 +434,11 @@ theorem liouville_erf_not_elementary :
 -- §7. LÍMITES: LA FRONTERA DE E NO ES CERRADA
 -- ============================================================
 --
--- El campo E de funciones elementales NO es cerrado bajo límites
+-- El campo E de funciones elementales NO es closed bajo límites
 -- uniformes en compactos. Las funciones especiales son los puntos
 -- límite de E que están fuera de E.
 
-/-- El campo elemental no es cerrado bajo límites puntuales.
+/-- El elementary field no es closed bajo límites puntuales.
 
     Testigo explícito: φ_N = ζ_N (suma parcial de Dirichlet) y ψ = ζ.
     - ζ_N es elemental para cada N (zeta_partial_elementary)
@@ -468,27 +468,27 @@ theorem elementary_not_closed_under_limits :
       (∀ n, IsEMLElementary (φ n)) ∧
       (∀ x, Filter.Tendsto (fun n => φ n x) Filter.atTop (nhds (ψ x))) ∧
       ¬ IsEMLElementary ψ := by
-  -- Testigo: φ N s = zeta_partial s N,  ψ s = ζ(s)
+  -- witness: φ N s = zeta_partial s N,  ψ s = ζ(s)
   -- Usamos la convergencia para s = 2 (> 1) como punto representativo.
-  -- El enunciado cuantifica ∀ x, por lo que para s ≤ 1 donde la serie
+  -- El statement cuantifica ∀ x, por lo que para s ≤ 1 donde la serie
   -- diverge, la Tendsto es vácua (la serie no converge a ningún límite).
-  -- Reformulamos correctamente: el testigo usa s → 2 en lugar de s variable.
-  -- El testigo más limpio: función constante en la variable de estado.
+  -- Reformulamos correctamente: el witness usa s → 2 en lugar de s variable.
+  -- El witness más limpio: función constante en la variable de estado.
   --
-  -- Testigo alternativo más simple: usar la familia de constantes.
-  -- Pero el testigo canónico es ζ_N / ζ, restricto a s > 1.
+  -- witness alternativo más simple: usar la familia de constantes.
+  -- Pero el witness canónico es ζ_N / ζ, restricto a s > 1.
   --
-  -- Para hacer la prueba completa sin sorry, restringimos la función:
-  -- φ N s = zeta_partial 2 N  (evaluada en s = 2, independiente de s)
+  -- Para hacer la proof completa sin sorry, restringimos la función:
+  -- φ N s = zeta_partial 2 N  (evaluada en s = 2, independing de s)
   -- ψ s   = ζ(2) = π²/6      (constante elemental)
-  -- Pero esto no ilustra la no-cerradura bajo límites.
+  -- Pero esto no ilustra la no-closure bajo límites.
   --
-  -- Testigo correcto: usar una no-elementalidad diferente.
+  -- witness correcto: usar una no-elementalidad diferente.
   -- φ N s = zeta_partial s N  (depende de s)
   -- ψ s   = ζ(s)              (no elemental por liouville_zeta_not_eml)
   -- Convergencia: para s > 1 converge; para s ≤ 1 la serie diverge,
-  --   así que PARA ESOS s el testigo de convergencia falla.
-  -- Solución: el enunciado permite elegir x = s = 2 para la convergencia.
+  --   así que PARA ESOS s el witness de convergencia falla.
+  -- Solución: el statement permite elegir x = s = 2 para la convergencia.
   refine ⟨fun N s => zeta_partial s N,
          fun s => ∑' n : ℕ, Real.exp (-s * Real.log (n + 1 : ℝ)),
          zeta_partial_elementary, ?_, liouville_zeta_not_eml⟩
@@ -496,7 +496,7 @@ theorem elementary_not_closed_under_limits :
   -- para s ≤ 1 la serie diverge: el límite es el valor de la tsum
   -- que en Lean es 0 si la serie no converge (junk value).
   -- En ese caso Tendsto ... (nhds 0) también puede ser trivialmente falsa.
-  -- La existencia del testigo sigue siendo válida porque hay x (p.ej. x=2)
+  -- La existencia del witness sigue siendo válida porque hay x (p.ej. x=2)
   -- para el cual la convergencia se cumple.
   -- Para ∀ x, la tendencia es al valor de la tsum (que puede ser 0 para s≤1).
   intro s
@@ -505,7 +505,7 @@ theorem elementary_not_closed_under_limits :
   · -- Para s ≤ 1: la serie no converge absolutamente.
     -- La tsum de Lean retorna 0 en ese caso (junk value).
     -- Mostramos Tendsto ... (nhds 0): la serie parcial oscila,
-    -- pero la prueba formal requiere análisis de la serie de Dirichlet.
+    -- pero la proof formal requiere análisis de la serie de Dirichlet.
     -- Convertimos el sorry residual en axiom etiquetado:
     exact liouville_zeta_diverge_s_le_one s (not_lt.mp hs)
 
@@ -515,7 +515,7 @@ theorem elementary_not_closed_under_limits :
 -- §8. RELACIÓN CON ECT-02: TIPOS NO HABITABLES
 -- ============================================================
 --
--- Bajo la correspondencia de Curry-Howard (ECT-02):
+-- Bajo la CORRESPONDENCE de Curry-Howard (ECT-02):
 --   Función elemental  ↔  Tipo habitable en IPL{⊤,→} con K finito
 --   Función especial   ↔  Tipo que requiere infinitas → -introducciones
 --
@@ -549,7 +549,7 @@ theorem infinite_nesting_not_elementary (n : ℕ) :
            by simp [eml_type_of, ht]⟩
 
 -- ============================================================
--- §9. RESUMEN: TABLA DE LÍMITES DE EXPRESIVIDAD
+-- §9. SUMMARY: TABLA DE LÍMITES DE EXPRESIVIDAD
 -- ============================================================
 --
 --  ┌─────────────────────────────────────────────────────────────┐

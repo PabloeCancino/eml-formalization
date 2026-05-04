@@ -1,5 +1,5 @@
--- EML.lean — Punto de entrada del proyecto EML
--- Reexporta todos los módulos de la librería
+﻿-- EML.lean — Entry point of the EML project
+-- Re-exports all library modules
 
 import EML.Basic
 import EML.TRS

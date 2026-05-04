@@ -1,16 +1,16 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Sheffer.lean
--- Álgebra Universal del Operador Sheffer-EML
+-- Universal Algebra of the Sheffer-EML Operator
 --
--- Fuente: arXiv:2604.23893v1 (Stachowiak, 2026)
--- Proyecto: J:\Math_All_in_One\ — Licenciatura en Matemáticas, UAN
+-- Source: arXiv:2604.23893v1 (Stachowiak, 2026)
+-- Project: J:\Math_All_in_One\ — Mathematics Undergraduate Programme, UAN
 -- ============================================================
 --
--- Este archivo formaliza la estructura algebraica universal que
+-- Este archivo formalizes the structure algebraica universal que
 -- subyace al operador EML y sus variantes (EDL, -EML), siguiendo
 -- el análisis de Stachowiak (P2).
 --
--- RESULTADO CENTRAL (P2, §1–2):
+-- CENTRAL RESULT (P2, §1–2):
 -- Dado un conjunto X, un operador binario M : X → X → X es una
 -- "operación de Sheffer" para grupos abelianos si satisface:
 --
@@ -27,11 +27,11 @@
 --   X = ℝ, M x y = exp(x) − log(y), e = 1
 --   (M satisface A1–A3 formalmente en el dominio analítico)
 --
--- CONTENIDO
---   §1  Typeclass ShefferOperator (los 3 axiomas de Stachowiak)
---   §2  Grupo abeliano derivado de un ShefferOperator
---   §3  Instancia: EML como ShefferOperator (en dominio restringido)
---   §4  Resultado de universalidad: profundidad 7 para la inversa
+-- CONTENTS
+--   §1  ShefferOperator TYPECLASS (los 3 axiomas de Stachowiak)
+--   §2  DERIVED ABELIAN GROUP de un ShefferOperator
+--   §3  INSTANCE: EML AS ShefferOperator (en dominio restringido)
+--   §4  Resultado de UNIVERSALITY: depth 7 para la inversa
 -- ============================================================
 
 import EML.Basic
@@ -41,7 +41,7 @@ import Mathlib.Tactic
 namespace EML
 
 -- ============================================================
--- §1. TYPECLASS ShefferOperator
+-- §1. ShefferOperator TYPECLASS
 -- ============================================================
 --
 -- Captura los tres axiomas de Stachowiak (P2 §1):
@@ -70,27 +70,27 @@ namespace ShefferOperator
 
 variable {X : Type*} [S : ShefferOperator X]
 
--- Notación local para el operador de Sheffer
+-- Local notation para el operador de Sheffer
 local notation x " ⊟ " y => S.op x y
 local notation "𝑒" => S.e
 
 -- ============================================================
--- §2. GRUPO ABELIANO DERIVADO
+-- §2. DERIVED ABELIAN GROUP
 -- ============================================================
 --
 -- De A1–A3 se derivan las siguientes operaciones de grupo (P2, §2):
 --   • ι x   := x ⊟ 𝑒         (esto resulta ser el inverso; ver lema abajo)
---   • x ⊞ y := x ⊟ (𝑒 ⊟ y)  (suma del grupo subyacente)
+--   • x ⊞ y := x ⊟ (𝑒 ⊟ y)  (Underlying group addition)
 
-/-- Inverso derivado: ι x = x ⊟ 𝑒.
+/-- Derived inverse: ι x = x ⊟ 𝑒.
     Stachowiak demuestra que esta operación da el inverso de grupo. -/
 def inv (x : X) : X := S.op x S.e
 
-/-- Suma del grupo subyacente: x ⊞ y = x ⊟ ι(y) = x ⊟ (y ⊟ 𝑒). -/
+/-- Underlying group addition: x ⊞ y = x ⊟ ι(y) = x ⊟ (y ⊟ 𝑒). -/
 def add (x y : X) : X := S.op x (inv y)
 
 -- Lema: inv aplica dos veces es la identidad (involución)
--- Prueba directa: A1 aplicado dos veces.
+-- proof directa: A1 aplicado dos veces.
 --   inv(inv x) = op(op x e) e
 --             = op x e       [por A1 con y := op x e]
 --             = x            [por A1 con y := x]
@@ -106,7 +106,7 @@ theorem op_e_anticomm (x z : X) : S.op x (S.op S.e z) = S.op z (S.op S.e x) :=
   S.A3 x S.e z
 
 -- ============================================================
--- §3. INSTANCIA: EML COMO ShefferOperator (DOMINIO REAL, FORMAL)
+-- §3. INSTANCE: EML AS ShefferOperator (DOMINIO REAL, FORMAL)
 -- ============================================================
 --
 -- El operador EML eml(x,y) = exp(x) − log(y) satisface A1–A3
@@ -114,7 +114,7 @@ theorem op_e_anticomm (x z : X) : S.op x (S.op S.e z) = S.op z (S.op S.e x) :=
 --   A1: eml(x, 1)  = exp(x) − log(1) = exp(x) − 0 = exp(x)
 --       ≠ x en general (¡A1 no vale para eml!)
 --
--- OBSERVACIÓN IMPORTANTE (Stachowiak P2, §2, Rem. 2.3):
+-- IMPORTANT REMARK (Stachowiak P2, §2, Rem. 2.3):
 -- El operador EML NO satisface A1 directamente. Stachowiak
 -- construye un homomorfismo de grupos: la estructura algebraica
 -- se obtiene a través de f = exp y f⁻¹ = log:
@@ -135,12 +135,12 @@ instance : ShefferOperator ℝ where
   A2  := fun x => by ring
   A3  := fun x y z => by ring
 
--- Verificación: la instancia satisface los 3 axiomas
+-- Verification: la instancia satisface los 3 axiomas
 example (x : ℝ) : (ShefferOperator.op x (ShefferOperator.e : ℝ)) = x := by
   simp [ShefferOperator.op, ShefferOperator.e]
 
 -- ============================================================
--- §3b. INSTANCIA EDL: ShefferOperator vía tipo envolvente
+-- §3b. EDL INSTANCE: ShefferOperator vía wrapper type
 -- ============================================================
 --
 -- EDL (Exponencial-División-Logaritmo) es el operador con argumentos
@@ -156,14 +156,14 @@ example (x : ℝ) : (ShefferOperator.op x (ShefferOperator.e : ℝ)) = x := by
 -- `ShefferOperator ℝ` (que ya usa x − y), definimos un tipo
 -- envolvente `OpReal` ("ℝ con operador opuesto").
 --
--- ISOMORFISMO (Stachowiak P2, §2):
+-- isomorphism (Stachowiak P2, §2):
 --   φ : (ℝ, x−y, 0) → (OpReal, y−x, 0),  φ(x) = −x
---   φ es un isomorfismo de ShefferOperators:
+--   φ es un isomorphism de ShefferOperators:
 --     φ(M_EML(x,y)) = −(x−y) = (−x) − (−y) ✓... ver lema abajo.
 --   Nota: la anti-resta NO es isomorfa a la resta vía un ShefferOperator-morfismo
---   estándar; sin embargo φ(x) = −x es un isomorfismo de GRUPOS (nivel Z₂).
+--   estándar; sin embargo φ(x) = −x es un isomorphism de GRUPOS (nivel Z₂).
 
-/-- Tipo envolvente para ℝ (usado para separar la instancia EDL). -/
+/-- wrapper type para ℝ (usado para separar la EDL INSTANCE). -/
 @[ext]
 structure OpReal where
   val : ℝ
@@ -173,21 +173,21 @@ noncomputable instance : Sub OpReal     := ⟨fun a b => ⟨a.val - b.val⟩⟩
 noncomputable instance : Neg OpReal     := ⟨fun a   => ⟨-a.val⟩⟩
 
 -- ──────────────────────────────────────────────────────────────────────────
--- OBSERVACIÓN MATEMÁTICA IMPORTANTE:
+-- IMPORTANT MATHEMATICAL REMARK:
 -- La anti-resta M'(x,y) = y − x con e = 0 NO satisface A1:
 --   M'(x, 0) = 0 − x = −x  ≠ x  (en general)
 --
 -- Por tanto EDL NO define un ShefferOperator diferente al de EML.
 -- Lo que distingue EML de EDL es la CONJUGACIÓN a nivel complejo:
 --   EML: eml(x,y) = exp(x) − log(y)    [aplicación "directa"]
---   EDL: edl(x,y) = exp(y) − log(x)    [argumentos intercambiados]
+--   EDL: edl(x,y) = exp(y) − log(x)    [swapped arguments]
 --
--- Algebraicamente, ambos inducen el MISMO grupo abeliano subyacente,
+-- Algebraicamente, ambos inducen el MISMO abelian group subyacente,
 -- pero vía conjugaciones diferentes:
 --   EML ↔ φ_EML : ℝ → ℂ,  φ(x) = exp(x)
 --   EDL ↔ φ_EDL : ℝ → ℂ,  φ(x) = log(x)
 --
--- El isomorfismo entre EML y EDL a nivel de ShefferOperator es
+-- El isomorphism entre EML y EDL a nivel de ShefferOperator es
 -- φ(x) = −x (negación), que envía la resta en la anti-resta:
 --   φ(x − y) = −x − (−y) = y − x  (que es la anti-resta)
 -- ──────────────────────────────────────────────────────────────────────────
@@ -202,7 +202,7 @@ noncomputable instance : ShefferOperator OpReal where
   A2  := fun x   => by cases x; simp
   A3  := fun x y z => by cases x; cases y; cases z; simp; ring
 
--- Verificación A1–A3 para la instancia EDL
+-- Verification A1–A3 para la EDL INSTANCE
 section EDLVerification
 
 example (x : OpReal) : (⟨x.val - (0 : ℝ)⟩ : OpReal) = x     := by cases x; simp
@@ -216,7 +216,7 @@ example (x y z : OpReal) :
 
 end EDLVerification
 
-/-- El isomorfismo entre los ShefferOperators de EML y EDL es φ(x) = −x.
+/-- El isomorphism entre los ShefferOperators de EML y EDL es φ(x) = −x.
     A nivel de grupo subyacente: φ(x − y) = −x − (−y) = y − x.
     Esto muestra que la "anti-resta" (y − x) es isomorfa a la resta vía negación.
     (Stachowiak P2, §2, Rem. 2.3) -/
@@ -225,11 +225,11 @@ theorem eml_edl_isom (x y : ℝ) :
 
 
 -- ============================================================
--- §3c. OPERADOR EDL COMPLEJO (CONEXIÓN CON EML)
+-- §3c. COMPLEX EDL OPERATOR (CONEXIÓN CON EML)
 -- ============================================================
 --
--- El operador EDL complejo es edl_ℂ(x,y) = exp(y) − log(x).
--- Es el operador EML con argumentos intercambiados:
+-- El COMPLEX EDL OPERATOR es edl_ℂ(x,y) = exp(y) − log(x).
+-- Es el operador EML con swapped arguments:
 --   eml(x,y) = exp(x) − log(y)
 --   edl(x,y) = exp(y) − log(x) = eml(y,x)
 --
@@ -237,12 +237,12 @@ theorem eml_edl_isom (x y : ℝ) :
 -- En términos de TRS, las reglas de reescritura de EDL son las mismas
 -- que EML con los subárboles intercambiados.
 
-/-- El operador EDL complejo: edl(x,y) = exp(y) − log(x).
+/-- El COMPLEX EDL OPERATOR: edl(x,y) = exp(y) − log(x).
     Es el conjugado del ShefferOperator `OpReal` bajo f = exp, g = log. -/
 noncomputable def edl_complex (x y : ℂ) : ℂ :=
   Complex.exp y - Complex.log x
 
-/-- EDL es EML con argumentos intercambiados: edl(x,y) = eml(y,x). -/
+/-- EDL es EML con swapped arguments: edl(x,y) = eml(y,x). -/
 theorem edl_eq_eml_swap (x y : ℂ) :
     edl_complex x y = Complex.exp y - Complex.log x := rfl
 
@@ -253,7 +253,7 @@ theorem edl_diagonal (x : ℂ) :
 
 -- Lema: la diagonal de EDL en x = 1 vale e − 0 = e (= exp 1)
 -- La constante distinguida del clon EDL es también exp(1) ≈ 2.718...
--- Esto es consistente con el Teorema de Obstrucción del Ideal Diagonal
+-- Esto es consistente con el Teorema de DIAGONAL IDEAL OBSTRUCTION
 -- (diagonal_obstruction_ax en Liouville.lean §10A).
 theorem edl_diagonal_at_one :
     edl_complex 1 1 = Complex.exp 1 := by
@@ -265,7 +265,7 @@ theorem edl_diagonal_at_one :
 
 
 -- ============================================================
--- §4. UNIVERSALIDAD: PROFUNDIDAD 7 PARA LA INVERSA (P2, obs. §2)
+-- §4. UNIVERSALITY: depth 7 PARA LA INVERSA (P2, obs. §2)
 -- ============================================================
 --
 -- Stachowiak observa (al final de §2):
@@ -290,7 +290,7 @@ theorem tLog_npi_length_eq_7 :
     2 * EMLTerm.complexity (EMLTerm.tLog EMLTerm.one) - 1 = 7 := by
   simp [EMLTerm.tLog, EMLTerm.complexity]
 
-/-- La profundidad NPI-7 de la fórmula de recuperación del logaritmo
+/-- La depth NPI-7 de la fórmula de recuperación del logaritmo
     es universal para todo operador de Sheffer (Stachowiak, P2 §2).
     Verificamos el caso EML: K[tLog one] = 4, equivalente a longitud 7 en NPI. -/
 theorem sheffer_recovery_depth_eml :

@@ -1,31 +1,31 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Completeness.lean
--- Teorema de Completitud EML en Lean 4
+-- Completeness theorem EML en Lean 4
 -- ECT-08: Consolidación final
 --
--- Fuente: arXiv:2603.21852v2 (Odrzywolek, 2026)
--- Proyecto: J:\Math_All_in_One\ - Licenciatura en Matemáticas, UAN
+-- Source: arXiv:2603.21852v2 (Odrzywolek, 2026)
+-- Project: J:\Math_All_in_One\ - Mathematics Undergraduate Programme, UAN
 -- ============================================================
 --
--- RESUMEN POST-CONSOLIDACIÓN (ECT-08)
+-- SUMMARY POST-CONSOLIDACIÓN (ECT-08)
 -- ------------------------------------
--- Este archivo integra la Torre de Liouville (Liouville.lean) con
--- los testigos constructivos de la Tabla 1 de Odrzywolek.
+-- Este archivo integra la Liouville Tower (Liouville.lean) con
+-- los witnesses constructivos de la Tabla 1 de Odrzywolek.
 --
 -- ESTADO DE SORRY:
---   §1  Testigos concretos:      ✅ sin sorry (verificados por K)
---   §2  Verificación semántica:  ✅ sin sorry
+--   §1  witnesses concretos:      ✅ sin sorry (VERIFIED por K)
+--   §2  Verification semántica:  ✅ sin sorry
 --   §3  Lema de composición:     ✅ sin sorry (via Liouville.lean)
 --   §4  Completitud general:     📌 usa axiom odrzywolek_completeness
 --                                   (Dirección 2 de Liouville.lean §8)
 --   §5  Reducción de sorry:      ✅ documentación de progress
 --
--- CONTENIDO
---   §1  Testigos EMLWitness de las 14 primitivas de la Tabla 1
---   §2  Verificación semántica de testigos clave
+-- CONTENTS
+--   §1  witnesses EMLWitness de las 14 primitivas de la Tabla 1
+--   §2  Verification semántica de witnesses clave
 --   §3  Lemas de composición (via Liouville.lean)
---   §4  El teorema de completitud con axiom Odrzywolek
---   §5  La cota K ≤ 6 como corolario de la Torre de Liouville
+--   §4  El Completeness theorem con axiom Odrzywolek
+--   §5  La K bound ≤ 6 como corolario de la Liouville Tower
 -- ============================================================
 
 import EML.Basic
@@ -39,11 +39,11 @@ namespace EML
 namespace EMLTerm
 
 -- ============================================================
--- §1. TESTIGOS COMPLETOS DE LA TABLA 1
+-- §1. witnesses COMPLETOS DE LA TABLA 1
 -- ============================================================
 --
 -- Cada primitiva de la Tabla 1 de Odrzywolek (2026) tiene un
--- testigo EMLTerm concreto. Verificamos sus complejidades.
+-- witness EMLTerm concreto. Verificamos sus complejidades.
 --
 -- Las 14 primitivas y sus K_EML:
 --   R1: Exp        K=2    R2: Log        K=4
@@ -56,7 +56,7 @@ namespace EMLTerm
 
 section Witnesses
 
-/-- Estructura que empaqueta el testigo y su complejidad para
+/-- Estructura que empaqueta el witness y su complejidad para
     cada función elemental de la Tabla 1. -/
 structure EMLWitness (name : String) where
   term        : EMLTerm       -- el árbol EMLTerm
@@ -64,7 +64,7 @@ structure EMLWitness (name : String) where
   kBound      : complexity ≤ 6 -- cota universal de Odrzywolek
   kProof      : K[term] = complexity  -- verificación
 
--- Testigos verificados de las primitivas básicas
+-- witnesses VERIFIED de las primitivas básicas
 
 def w_Exp : EMLWitness "Exp" where
   term       := tExp one
@@ -108,7 +108,7 @@ def w_Sqrt : EMLWitness "Sqrt" where
           tPlus, tSubtract, tTwo, EMLTerm.complexity]
     ring
 
--- Verificación de la cota K ≤ 6 para todos los testigos
+-- Verification de la K bound ≤ 6 para todos los witnesses
 theorem all_witnesses_K_leq_6 :
     K[w_Exp.term] ≤ 6 ∧ K[w_Log.term] ≤ 6 ∧ K[w_Minus.term] ≤ 6 ∧
     K[w_Subtract.term] ≤ 6 ∧ K[w_Inv.term] ≤ 6 ∧ K[w_Sqrt.term] ≤ 6 := by
@@ -119,7 +119,7 @@ theorem all_witnesses_K_leq_6 :
 end Witnesses
 
 -- ============================================================
--- §2. VERIFICACIÓN SEMÁNTICA DE TESTIGOS CLAVE
+-- §2. Verification SEMÁNTICA DE witnesses CLAVE
 -- ============================================================
 
 section SemanticVerification
@@ -141,7 +141,7 @@ theorem eval_subtract_11 (z : ℂ) :
         Complex.exp_zero, Complex.log_exp]
   ring
 
--- Testigo de exp evaluado en un punto genérico
+-- witness de exp evaluado en un punto genérico
 theorem testigo_Exp_eval (z : ℂ) (w : ℂ) :
     ⟦tExp one⟧(z) = Complex.exp 1 := eval_w_Exp z
 
@@ -185,7 +185,7 @@ theorem elementary_has_eml_witness :
 end CompositionLemmas
 
 -- ============================================================
--- §4. EL TEOREMA DE COMPLETITUD CON AXIOM ODRZYWOLEK
+-- §4. EL Completeness theorem CON AXIOM ODRZYWOLEK
 -- ============================================================
 --
 -- Usamos el axioma `odrzywolek_completeness` de Liouville.lean
@@ -195,7 +195,7 @@ end CompositionLemmas
 
 section CompletenessTheorem
 
-/-- TEOREMA DE COMPLETITUD (Odrzywolek 2026, Lean 4)
+/-- Completeness theorem (Odrzywolek 2026, Lean 4)
 
     El sistema {1, f} con f(x,y) = exp(x) - log(y) es funcionalmente
     completo para el campo elemental de Liouville E:
@@ -227,7 +227,7 @@ theorem elementary_has_finite_K (f : ℂ → ℂ)
   obtain ⟨t, ht⟩ := hf
   exact ⟨K[t], t, rfl, ht⟩
 
-/-- La cota K ≤ 6 (Teorema de Odrzywolek, versión débil verificada):
+/-- La K bound ≤ 6 (Teorema de Odrzywolek, versión débil verificada):
     Las 14 primitivas de la Tabla 1 tienen K ≤ 6.
     La cota universal K ≤ 6 para TODA función elemental es odrzywolek_completeness. -/
 theorem K_bound_primitives :
@@ -250,21 +250,21 @@ end CompletenessTheorem
 --   • elementary_sum/product/inverse: PROBADOS sin sorry ✅
 --   • eml_liouville_bijection: PROBADO sin sorry ✅
 --   • odrzywolek_completeness: AXIOM (etiquetado explícitamente)
---   • schanuel_two: AXIOM (conjetura no probada, etiquetada)
+--   • schanuel_two: AXIOM (conjecture no probada, etiquetada)
 --
--- RESUMEN DE AXIOMS RESIDUALES:
+-- SUMMARY DE AXIOMS RESIDUALES:
 --   1. odrzywolek_completeness — corresponde a Thm. 1 de arXiv:2603.21852v2
 --      Verificado constructivamente para las 14 primitivas (§1 de este archivo).
---      Pendiente: inducción formal sobre la Torre de Liouville.
+--      pending: inducción formal sobre la Liouville Tower.
 --
---   2. schanuel_two — Conjetura de Schanuel (1960), sin demostración conocida.
+--   2. schanuel_two — conjecture de Schanuel (1960), sin proof conocida.
 --      Usada solo para el word problem (ECT-10 §7).
 
 -- Listado de axioms residuales para transparencia
 #check @odrzywolek_completeness  -- Axiom: Thm. 1 de Odrzywolek (constructivo en §1)
 #check @schanuel_two             -- Axiom: Conjetura de Schanuel (conjetura abierta)
 
--- Verificación sin sorry de los resultados clave
+-- Verification sin sorry de los resultados clave
 #check every_eml_term_is_elementary   -- ✅ sin sorry
 #check eml_completeness_via_liouville -- ✅ sin sorry (usa axiom)
 #check elementary_has_finite_K        -- ✅ sin sorry

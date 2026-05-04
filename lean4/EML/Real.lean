@@ -1,4 +1,4 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Real.lean
 -- Evaluador real de términos EML — sin hipótesis de rama
 --
@@ -36,7 +36,7 @@ namespace EMLTerm
 -- Real.log es total: Real.log x = 0 para x ≤ 0.
 -- Esta totalidad es lo que permite evitar hipótesis de rama.
 
-/-- Evaluación real de un término EML en z : ℝ. -/
+/-- Evaluation real de un término EML en z : ℝ. -/
 noncomputable def reval (t : EMLTerm) (z : ℝ) : ℝ :=
   match t with
   | one       => 1
@@ -58,7 +58,7 @@ theorem reval_app (t s : EMLTerm) (z : ℝ) :
 -- ============================================================
 
 -- R1: ⟦tExp t⟧ᵣ(z) = exp(⟦t⟧ᵣ(z))
--- Prueba: tExp t = app t one, y Real.log 1 = 0.
+-- proof: tExp t = app t one, y Real.log 1 = 0.
 theorem reval_tExp (t : EMLTerm) (z : ℝ) :
     ⟦tExp t⟧ᵣ(z) = Real.exp (⟦t⟧ᵣ(z)) := by
   simp [tExp, Real.log_one]
@@ -93,7 +93,7 @@ theorem reval_tLog (t : EMLTerm) (z : ℝ) :
   simp only [tLog, reval_app, reval_one, Real.log_one, sub_zero, Real.log_exp]
   ring
 
--- Verificación inmediata en casos concretos:
+-- Verification inmediata en casos concretos:
 
 -- log(exp(z)) = z  [conocido, pero ahora via tLog]
 theorem reval_tLog_tExp (t : EMLTerm) (z : ℝ) :
@@ -159,7 +159,7 @@ theorem reval_tMinus_is_one_sub (x : EMLTerm) (z : ℝ) :
   simp only [tMinus, reval_app, reval_tLog, reval_one, Real.log_one,
              reval_tExp, Real.log_exp, Real.exp_zero]
 
--- Consecuencia: la semántica de tSubtract, tPlus, tTimes, etc.
+-- Consequence: la semántica de tSubtract, tPlus, tTimes, etc.
 -- sobre ℝ difiere de la semántica matemática EML cuando las
 -- expresiones pasan por log(0) = −∞.
 -- Esto explica por qué la Tabla 1 de Odrzywołek requiere ℂ,
@@ -175,17 +175,17 @@ theorem reval_tMinus_is_one_sub (x : EMLTerm) (z : ℝ) :
 --   Cosh(x) = (exp(x) + exp(-x))/2  →  requiere tMinus = −x, que falla en ℝ
 --   Sqrt(x) = exp(log(x)/2)  →  requiere tSubtract = x−y, que necesita ht
 
--- La cota K ≤ 6 es una propiedad SINTÁCTICA y es incondicional:
+-- La K bound ≤ 6 es una propiedad SINTÁCTICA y es incondicional:
 -- no depende del evaluador real o complejo.
 
--- Complejidades verificadas sin evaluación:
+-- Complejidades VERIFIED sin Evaluation:
 theorem k_tExp_one : K[tExp one] = 2 := by simp [tExp, complexity]
 theorem k_tLog_one : K[tLog one] = 4 := by simp [tLog, complexity]
 theorem k_tLog_tLog_one : K[tLog (tLog one)] = 7 := by
   simp [tLog, complexity]
 
 -- ============================================================
--- §7. COMPOSICIÓN: TESTIGO PARA exp ∘ f Y log ∘ f
+-- §7. COMPOSICIÓN: witness PARA exp ∘ f Y log ∘ f
 -- ============================================================
 --
 -- La relación de composición es incondicional sobre reval.
@@ -208,7 +208,7 @@ theorem reval_log_exp_id (t : EMLTerm) (z : ℝ) :
   reval_tLog_tExp t z
 
 -- ============================================================
--- §8. TABLA RESUMEN — ¿QUÉ ES INCONDICIONAL EN ℝ?
+-- §8. TABLA SUMMARY — ¿QUÉ ES INCONDICIONAL EN ℝ?
 -- ============================================================
 --
 -- | Teorema              | Incondicional | Condición si no |

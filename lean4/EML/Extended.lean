@@ -1,8 +1,8 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Extended.lean
--- Evaluador EML sobre reales extendidos (EReal)
+-- EML evaluator over extended reals (EReal)
 --
--- MOTIVACIÓN
+-- MOTIVATION
 -- ----------
 -- EML/Real.lean probó reval_tLog incondicional en ℝ.
 -- Pero la cadena EML usa log(0) = −∞ para Minus(x) = −x.
@@ -11,7 +11,7 @@
 -- Solución: EReal = WithBot (WithTop ℝ), donde ⊥ = −∞.
 -- Con emlLog 0 = ⊥, la cadena Minus funciona correctamente.
 --
--- DESCUBRIMIENTO CENTRAL
+-- CENTRAL DISCOVERY
 -- ----------------------
 -- El árbol correcto para Minus(x) = −x es:
 --   tMinusV x = app (tLog (tLog one)) (tExp x)
@@ -25,11 +25,11 @@
 --     = 0        + (-(ereval x z))                 [emlExp_bot, emlLog_emlExp]
 --     = -ereval x z  ✓
 --
--- DIFICULTAD TÉCNICA
+-- TECHNICAL DIFFICULTY
 -- ------------------
 -- EReal no es un anillo; `ring` no aplica.
 -- La aritmética `e + -(e + (-x)) = x` para e : ℝ finito y x : EReal
--- se prueba por casos (⊥, ⊤, coe r), aislada en `ereal_shift_cancel`.
+-- se proof por casos (⊥, ⊤, coe r), aislada en `ereal_shift_cancel`.
 -- ============================================================
 
 import Mathlib.Data.EReal.Basic
@@ -126,9 +126,9 @@ theorem emlExp_emlLog_nonneg {x : EReal} (hx : 0 ≤ x) :
 -- §3. LEMA ARITMÉTICO CLAVE EN EReal
 -- ============================================================
 --
--- La prueba de ereval_tLog necesita el análogo de:
+-- La proof de ereval_tLog necesita el análogo de:
 --   e + -(e + (-x)) = x   (válido en ℝ por ring)
--- En EReal, se prueba por casos en x (⊥, ⊤, coe r).
+-- En EReal, se proof por casos en x (⊥, ⊤, coe r).
 -- Para e : ℝ (finito), el resultado vale incondicionalmente.
 
 /-- Aritmética EReal: para e : ℝ finito y x : EReal,
@@ -172,7 +172,7 @@ inductive EMLTermV : Type where
 
 namespace EMLTermV
 
--- Árboles testigo (misma estructura que en Basic.lean):
+-- Witness trees (misma estructura que en Basic.lean):
 def tExp (x : EMLTermV) : EMLTermV := app x one
 def tLog (x : EMLTermV) : EMLTermV := app one (app (app one x) one)
 
@@ -184,7 +184,7 @@ def tLog (x : EMLTermV) : EMLTermV := app one (app (app one x) one)
 -- (equivalente a emlExp(a) - emlLog(b), usando suma con negativo
 -- para evitar los casos indeterminados de EReal.sub)
 
-/-- Evaluación EReal de un término EMLTermV. -/
+/-- Evaluation EReal de un término EMLTermV. -/
 noncomputable def ereval (t : EMLTermV) (z : EReal) : EReal :=
   match t with
   | one       => (1 : ℝ)
@@ -210,7 +210,7 @@ theorem ereval_tExp (t : EMLTermV) (z : EReal) :
   simp [emlLog_one]
 
 -- R2: ⟦tLog t⟧ₑ(z) = emlLog(⟦t⟧ₑ(z))  — INCONDICIONAL en EReal
--- Prueba: usa emlLog_emlExp y ereal_shift_cancel.
+-- proof: usa emlLog_emlExp y ereal_shift_cancel.
 theorem ereval_tLog (t : EMLTermV) (z : EReal) :
     ⟦tLog t⟧ₑ(z) = emlLog (⟦t⟧ₑ(z)) := by
   simp only [tLog, ereval_app, ereval_one]
@@ -225,8 +225,8 @@ theorem ereval_tLog (t : EMLTermV) (z : EReal) :
 -- ============================================================
 --
 -- En Basic.lean: tMinus x = app (tLog one) (tExp x)
---   → evaluación en ℝ: 1 − x  (INCORRECTO para −x)
---   → evaluación en EReal: también 1 − x (emlLog 1 = 0, emlExp 0 = 1)
+--   → Evaluation en ℝ: 1 − x  (INCORRECTO para −x)
+--   → Evaluation en EReal: también 1 − x (emlLog 1 = 0, emlExp 0 = 1)
 --
 -- El árbol CORRECTO necesita log(0) = −∞ = ⊥:
 --   tMinusV x = app (tLog (tLog one)) (tExp x)
@@ -253,7 +253,7 @@ theorem ereval_tMinusV (x : EMLTermV) (z : EReal) :
   norm_cast
   simp [emlLog_one, emlLog_zero, emlExp_bot, emlLog_emlExp]
 
--- Casos especiales verificados:
+-- Casos especiales VERIFIED:
 
 theorem ereval_tMinusV_var (z : EReal) :
     ⟦tMinusV var⟧ₑ(z) = -z := by
@@ -367,7 +367,7 @@ theorem ereval_tTimesV_real (t s : EMLTermV) (z : EReal) (r₁ r₂ : ℝ)
 --   ereval: EMLTermV → EReal → EReal  (usa emlExp/emlLog, incondicional)
 --   ceval : EMLTermV → ℂ → ℂ          (usa Complex.exp/log, rama principal)
 
-/-- Evaluación en ℂ de un EMLTermV.
+/-- Evaluation en ℂ de un EMLTermV.
     Análogo de EMLTerm.eval pero con soporte para `var` (identidad). -/
 noncomputable def ceval (t : EMLTermV) (z : ℂ) : ℂ :=
   match t with
@@ -430,16 +430,16 @@ theorem ceval_tLog_var (z : ℂ)
 def IsLiouvilleElementaryComplexV (f : ℂ → ℂ) : Prop :=
   ∃ (t : EMLTermV), ∀ z : ℂ, ⟦t⟧ℂ(z) = f z
 
--- exp z es elemental: testigo EMLTermV.tExp var  ✅ sin sorry
+-- exp z es elemental: witness EMLTermV.tExp var  ✅ sin sorry
 theorem elementary_exp_V :
     IsLiouvilleElementaryComplexV (fun z => Complex.exp z) :=
   ⟨tExp var, fun z => by simp [ceval_tExp, ceval_var]⟩
 
--- log z es elemental: testigo EMLTermV.tLog var
--- Limitación arquitectónica documentada:
+-- log z es elemental: witness EMLTermV.tLog var
+-- DOCUMENTED ARCHITECTURAL LIMITATION:
 -- En ℂ, Complex.log(exp w) = w requiere -π < w.im ≤ π, donde w = exp(1) - log(z).
--- Esta condición no se puede garantizar para todo z : ℂ, así que el testigo
--- tLog var no cierra el goal universalmente. Lo declaramos como axiom honesto:
+-- Esta condición no se puede garantizar para todo z : ℂ, así que el witness
+-- tLog var no cierra el goal universalmente. Lo declaramos como honest axiom:
 axiom elementary_log_V_ax :
     IsLiouvilleElementaryComplexV (fun z => Complex.log z)
 
@@ -478,8 +478,8 @@ private theorem ceval_tLog_one (z : ℂ) : ⟦tLog one⟧ℂ(z) = 0 := by
 
 -- En ℂ, ceval (tLog (tLog one)) z = 0.
 -- BLOQUEADOR: ⟦tLog one⟧ℂ(z) = 0 rompe la hipotesis hne de ceval_tLog.
--- La prueba directa requiere expandir ceval manualmente y aplicar log_zero.
--- SORRY HONESTO: pendiente de prueba directa vía expand_ceval.
+-- La proof directa requiere expandir ceval manualmente y aplicar log_zero.
+-- SORRY HONESTO: pending de proof directa vía expand_ceval.
 --
 -- La traza correcta es:
 -- ⟦tLog (tLog one)⟧ℂ(z)
@@ -487,7 +487,7 @@ private theorem ceval_tLog_one (z : ℂ) : ⟦tLog one⟧ℂ(z) = 0 := by
 -- = exp(1) - log(exp(exp(1) - log(exp(exp(1)))) - 0)
 -- = exp(1) - log(exp(exp(1) - exp(1)))   [log_exp hbr]
 -- = exp(1) - log(exp(0)) = exp(1) - log(1) = exp(1) - 0 = exp(1) ???
--- NECESITA REVERIFICACIÓN DE LA TRAZA
+-- NECESITA REVerification DE LA TRAZA
 private theorem ceval_tLog_tLog_one (z : ℂ) : ⟦tLog (tLog one)⟧ℂ(z) = 0 := by
   have hbr := exp_one_im_bounds
   -- Expand tLog (tLog one) manually to get ⟦tLog one⟧ in the expression
@@ -543,7 +543,7 @@ theorem ceval_tInvV (t : EMLTermV) (z : ℂ)
   rw [Complex.exp_sub, Complex.exp_log hne_t]
 
 -- ============================================================
--- §14. CERRADURA DE IsLiouvilleElementaryComplexV
+-- §14. closure DE IsLiouvilleElementaryComplexV
 -- ============================================================
 --
 -- Versiones V de los teoremas de cierre de Liouville.lean §9.

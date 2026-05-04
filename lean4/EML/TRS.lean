@@ -1,13 +1,13 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/TRS.lean
 -- Sistema de Reescritura de Términos EML (TRS-EML)
 --
--- Formaliza el TRS↑ (expansión) y sus propiedades:
+-- formalizes el TRS↑ (expansión) y sus propiedades:
 --   - EMLTermNamed: tipo con constructores de símbolos nombrados
 --   - Las 15 reglas R1–R15 como relación de reescritura
---   - Terminación: namedDepth decrece monotónamente (Prop T1)
+--   - Termination: namedDepth decrece monotónamente (Prop T1)
 --   - Forma Normal de Expansión (FNE)
---   - El par crítico de TRS↓ (no-confluencia, Prop C2)
+--   - El par crítico de TRS↓ (no-Confluence, Prop C2)
 -- ============================================================
 
 import EML.Basic
@@ -28,13 +28,13 @@ namespace EML
 -- SOLUCIÓN
 -- --------
 -- Definir EMLTermNamed con constructores distintos para los símbolos
--- nombrados. La complejidad KN asigna a cada símbolo nombrado el
+-- nombrados. La Complexity KN asigna a cada símbolo nombrado el
 -- peso de sus subárboles (sin overhead), mientras que `app` agrega
 -- los pesos de sus dos hijos. Así:
 --   KN(nExp x) = KN(x) < KN(x)+1 = KN(app x one)  ✓
 --   KN(nLog x) = KN(x) < KN(x)+3                   ✓
 --
--- La TERMINACIÓN se prueba via `namedDepth`: número de capas de
+-- La Termination se proof via `namedDepth`: número de capas de
 -- símbolos nombrados, que decrece en cada paso de TRS↑.
 
 /-- Término EML con símbolos nombrados (gramática extendida). -/
@@ -61,10 +61,10 @@ inductive EMLTermNamed : Type where
 namespace EMLTermNamed
 
 -- ============================================================
--- §2. COMPLEJIDAD KN
+-- §2. Complexity KN
 -- ============================================================
 
-/-- Complejidad KN: hojas (ones) en el árbol, transparente a símbolos nombrados. -/
+/-- Complexity KN: hojas (ones) en el árbol, transparente a símbolos nombrados. -/
 def kn : EMLTermNamed → ℕ
   | one           => 1
   | app t s       => t.kn + s.kn
@@ -125,14 +125,14 @@ theorem kn_pos : ∀ t : EMLTermNamed, 0 < KN[t] := by
   | nCosh t ht          => simpa
 
 -- ============================================================
--- §3. MEDIDA DE TERMINACIÓN: namedDepth
+-- §3. MEDIDA DE Termination: namedDepth
 -- ============================================================
 --
 -- KN no crece en R3-R7 (reestructuración sin agregar hojas).
--- La terminación se prueba por namedDepth: cada regla elimina
--- una capa de símbolo nombrado, reduciendo la profundidad.
+-- La Termination se proof por namedDepth: cada regla elimina
+-- una capa de símbolo nombrado, reduciendo la depth.
 
-/-- Profundidad de anidamiento de símbolos nombrados. -/
+/-- depth de anidamiento de símbolos nombrados. -/
 def namedDepth : EMLTermNamed → ℕ
   | one           => 0
   | app t s       => max t.namedDepth s.namedDepth
@@ -196,11 +196,11 @@ inductive TRSUpStep : EMLTermNamed → EMLTermNamed → Prop where
   | ctxRight : ∀ t s s', TRSUpStep s s' → TRSUpStep (app t s) (app t s')
 
 -- ============================================================
--- §5. TERMINACIÓN DE TRS↑
+-- §5. TRS termination↑
 -- ============================================================
 
 -- ============================================================
--- NOTA SOBRE LA MEDIDA DE TERMINACIÓN
+-- NOTA SOBRE LA MEDIDA DE Termination
 -- ============================================================
 --
 -- `namedDepth` sola NO funciona como medida decreciente para el TRS completo:
@@ -209,9 +209,9 @@ inductive TRSUpStep : EMLTermNamed → EMLTermNamed → Prop where
 --       namedDepth(RHS) = max(D(x)+1, D(y)+1) = max(D(x),D(y))+1 = namedDepth(LHS) ✗
 -- - R5: nPlus(x,y) → nSubtract(x, nMinus(y))
 --       namedDepth(RHS) = max(D(x), D(y)+1)+1 ≥ D(y)+2 > max(D(x),D(y))+1 ✗ (puede crecer)
--- - ctxLeft: si namedDepth(s) > namedDepth(t), el rewrite no cambia la profundidad ✗
+-- - ctxLeft: si namedDepth(s) > namedDepth(t), el rewrite no cambia la depth ✗
 --
--- La terminación correcta usa una INTERPRETACIÓN POLINOMIAL:
+-- La Termination correcta usa una INTERPRETACIÓN POLINOMIAL:
 -- Asignar a cada símbolo un peso W tal que W(LHS) > W(RHS) en cada regla.
 -- Por ejemplo:
 --   W(nTimes) = W(x)+W(y)+M² para M suficientemente grande
@@ -219,26 +219,26 @@ inductive TRSUpStep : EMLTermNamed → EMLTermNamed → Prop where
 --   W(nLog)   = W(x)+c₁, etc.
 -- Los coeficientes se eligen para que R3-R15 sean decrecientes.
 --
--- En este archivo formalizamos la terminación de R1 y R2 (las reglas
+-- En este archivo formalizesmos la Termination de R1 y R2 (las reglas
 -- "base" que eliminan símbolos a f-árboles puros) y enunciamos la
--- terminación general con sorry, indicando que requiere este argumento.
+-- Termination general con sorry, indicando que requiere este argumento.
 
--- Lema central de terminación: cada paso TRSUpStep estrictamente
+-- Lema central de Termination: cada paso TRSUpStep estrictamente
 -- disminuye namedDepth (o lo mantiene a 0 para reglas que introducen `app`
--- puro con subestructuras de menor profundidad).
+-- puro con subestructuras de menor depth).
 --
 -- Concretamente, para cada constructor de TRSUpStep:
 -- • R1: namedDepth (nExp x) = x.namedDepth + 1 > 0 = namedDepth (app x one)  ✓
 -- • R2: namedDepth (nLog x) = x.namedDepth + 1 > namedDepth (app one (...)) ✓
--- • R3-R15: el LHS tiene profundidad ≥ 1; el RHS puede introducir
+-- • R3-R15: el LHS tiene depth ≥ 1; el RHS puede introducir
 --           más constructores nombrados (e.g. R8: Sqr→Times(x,x) duplica x).
---           La medida correcta es una interpretación polinomial (trabajo futuro).
+--           La medida correcta es una interpretación polinomial (future work).
 --
 -- La medida correcta es la suma ponderada de constructores nombrados,
 -- que decrece estrictamente en cada aplicación de R1-R15.
--- Formalizamos via `measure namedCount` (R1 y R2 completamente, R3-R15 con sorry).
+-- formalizesmos via `measure namedCount` (R1 y R2 completamente, R3-R15 con sorry).
 
--- Medida de terminación: interpretación polinomial ponderada.
+-- Medida de Termination: interpretación polinomial ponderada.
 -- Constructores que DUPLICAN subárboles (nSqr, nHypot, nCosh) cuentan
 -- su argumento DOS VECES. Los pesos se eligen para que cada regla R1-R15
 -- haga decrecer estrictamente la medida:
@@ -387,7 +387,7 @@ theorem isFNE_iff_depth_zero (t : EMLTermNamed) :
     · intro h; simp only [namedDepth] at h; omega
 
 -- ============================================================
--- §7. PAR CRÍTICO DE TRS↓ (NO-CONFLUENCIA)
+-- §7. PAR CRÍTICO DE TRS↓ (NO-Confluence)
 -- ============================================================
 --
 -- Proposición C2 (EML_Sistema_Reescritura.md):

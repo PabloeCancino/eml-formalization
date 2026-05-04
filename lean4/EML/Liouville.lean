@@ -1,34 +1,34 @@
--- ============================================================
+﻿-- ============================================================
 -- EML/Liouville.lean
--- ECT-08: Torre de Liouville como Tipo Inductivo en Lean 4
+-- ECT-08: Liouville Tower as an Inductive Type en Lean 4
 --
--- Fuente: arXiv:2603.21852v2 (Odrzywolek, 2026)
--- Proyecto: J:\Math_All_in_One\ - Licenciatura en Matemáticas, UAN
+-- Source: arXiv:2603.21852v2 (Odrzywolek, 2026)
+-- Project: J:\Math_All_in_One\ - Mathematics Undergraduate Programme, UAN
 -- ============================================================
 --
--- RESUMEN
+-- SUMMARY
 -- -------
--- Este archivo formaliza la TORRE DE LIOUVILLE como un tipo inductivo
+-- Este archivo formalizes la Liouville Tower como un tipo inductivo
 -- en Lean 4. La torre captura exactamente el campo de funciones
 -- elementales E que el sistema EML {1, f} genera.
 --
--- La correspondencia central (Thm. Odrzywolek ↔ Thm. Liouville):
+-- La CORRESPONDENCE central (Thm. Odrzywolek ↔ Thm. Liouville):
 --
---   f ∈ E  (campo elemental)
+--   f ∈ E  (elementary field)
 --   ⟺
 --   ∃ t : EMLTerm,  ∀ z : ℂ,  ⟦t⟧(z) = f(z)
 --
--- CONTENIDO
---   §1  LiouvilleStep: tipo de extensiones permitidas (exp, log, alg)
---   §2  LiouvilleTower: la torre inductiva L₀ ⊆ L₁ ⊆ L₂ ⊆ ...
---   §3  LiouvilleLevel: el nivel mínimo de cada función elemental
---   §4  Operaciones de campo dentro de la torre
---   §5  Correspondencia LiouvilleLevel ↔ K_EML
+-- CONTENTS
+--   §1  LiouvilleStep: PERMITTED EXTENSION TYPES (exp, log, alg)
+--   §2  LiouvilleTower: la Inductive tower L₀ ⊆ L₁ ⊆ L₂ ⊆ ...
+--   §3  LiouvilleLevel: el MINIMUM LEVEL FOR EACH FUNCTION elemental
+--   §4  FIELD OPERATIONS WITHIN THE TOWER
+--   §5  CORRESPONDENCE LiouvilleLevel ↔ K_EML
 --   §6  El predicado IsElementary vía la torre
 --   §7  El axioma de Schanuel como extensión de la torre
 --   §8  Conexión: EMLTerm habita la torre (el teorema clave)
 --   §9  Lemas de cierre: composición preserva la torre
---   §10 Resumen: hacia la prueba de completitud de EML
+--   §10 SUMMARY: hacia la proof de completitud de EML
 -- ============================================================
 
 import EML.Basic
@@ -42,10 +42,10 @@ import Mathlib.Tactic
 namespace EML
 
 -- ============================================================
--- §1. LiouvilleStep: TIPO DE EXTENSIONES PERMITIDAS
+-- §1. LiouvilleStep: PERMITTED EXTENSION TYPES
 -- ============================================================
 --
--- La Torre de Liouville se construye adjuntando funciones elementales
+-- La Liouville Tower se construye adjuntando funciones elementales
 -- paso a paso. Cada paso es uno de tres tipos:
 --
 --   • Algebraico:    adjuntar una raíz de un polinomio sobre el campo actual
@@ -54,21 +54,21 @@ namespace EML
 --
 -- Esto es la definición estándar de Risch/Davenport.
 
-/-- Los tres tipos de extensiones elementales que construyen la Torre de Liouville. -/
+/-- Los tres three types of elementary extensions que construyen la Liouville Tower. -/
 inductive LiouvilleStep : Type where
-  /-- Extensión algebraica: θ satisface un polinomio sobre el campo base. -/
+  /-- Algebraic extension: θ satisface un polinomio sobre el campo base. -/
   | algebraic   : LiouvilleStep
-  /-- Extensión exponencial: θ = exp(u) para algún u en el campo base. -/
+  /-- Exponential extension: θ = exp(u) para algún u en el campo base. -/
   | exponential : LiouvilleStep
-  /-- Extensión logarítmica: θ = log(u) para algún u en el campo base. -/
+  /-- Logarithmic extension: θ = log(u) para algún u en el campo base. -/
   | logarithmic : LiouvilleStep
   deriving Repr, DecidableEq, Inhabited
 
 -- ============================================================
--- §2. LiouvilleTower: LA TORRE INDUCTIVA
+-- §2. LiouvilleTower: LA Inductive tower
 -- ============================================================
 --
--- Formalizamos la torre como una secuencia de pasos:
+-- formalizesmos la torre como una secuencia de pasos:
 --
 --   L₀ = ℚ(x)         (funciones racionales, nivel base)
 --   L₁ = L₀(θ₁)       (primera extensión: exp, log, o alg)
@@ -77,12 +77,12 @@ inductive LiouvilleStep : Type where
 --   Lₙ = L_{n-1}(θₙ)  (n-ésima extensión)
 --
 -- Una función es elemental si pertenece a algún Lₙ con n finito.
--- La colección E = ∪_{n≥0} Lₙ es el campo elemental de Liouville.
+-- La colección E = ∪_{n≥0} Lₙ es el elementary field de Liouville.
 
-/-- Descripción finita de un elemento de la Torre de Liouville:
+/-- Descripción finita de un elemento de la Liouville Tower:
     una secuencia de pasos de extensión desde L₀. -/
 structure LiouvilleTower where
-  /-- Profundidad de la torre (número de extensiones). -/
+  /-- depth de la torre (número de extensiones). -/
   depth  : ℕ
   /-- La secuencia de pasos de extensión. -/
   steps  : Fin depth → LiouvilleStep
@@ -90,7 +90,7 @@ structure LiouvilleTower where
 
 namespace LiouvilleTower
 
-/-- Torre base: L₀ = ℚ(x), sin extensiones. -/
+/-- Base tower: L₀ = ℚ(x), sin extensiones. -/
 def base : LiouvilleTower where
   depth := 0
   steps := Fin.elim0
@@ -100,36 +100,36 @@ def extend (L : LiouvilleTower) (s : LiouvilleStep) : LiouvilleTower where
   depth := L.depth + 1
   steps := Fin.lastCases s L.steps
 
-/-- Torre de profundidad 1 con solo una extensión exponencial (para exp, e^x). -/
+/-- Torre de depth 1 con solo una Exponential extension (para exp, e^x). -/
 def L_exp : LiouvilleTower := base.extend LiouvilleStep.exponential
 
-/-- Torre de profundidad 2: extensión exponencial + logarítmica (para exp y log). -/
+/-- Torre de depth 2: Exponential extension + logarítmica (para exp y log). -/
 def L_log : LiouvilleTower := L_exp.extend LiouvilleStep.logarithmic
 
-/-- Torre de profundidad 3: para sin, cos via e^{ix}. -/
+/-- Torre de depth 3: para sin, cos via e^{ix}. -/
 def L_trig : LiouvilleTower := L_log.extend LiouvilleStep.exponential
 
-/-- Torre de profundidad 4: para arctan, arcsin via log. -/
+/-- Torre de depth 4: para arctan, arcsin via log. -/
 def L_invtrig : LiouvilleTower := L_trig.extend LiouvilleStep.logarithmic
 
 -- ============================================================
 -- LEMA AUXILIAR: Fin.castLE es preservador de valor
 -- ============================================================
 --
--- `Fin.castLE h i` solo cambia la *prueba* de acotamiento:
+-- `Fin.castLE h i` solo cambia la *proof* de acotamiento:
 --   (Fin.castLE h i).val = i.val   (definitionally true)
 --
--- Consecuencia: la composición de dos castLE es igual a un
--- único castLE con la prueba compuesta, vía Fin.ext + rfl.
+-- Consequence: la composición de dos castLE es igual a un
+-- único castLE con la proof compuesta, vía Fin.ext + rfl.
 
-/-- Composición de Fin.castLE: dos castLEs seguidos = uno con prueba transitiva.
+/-- Composición de Fin.castLE: dos castLEs seguidos = uno con proof transitiva.
     La prueba es `Fin.ext rfl` porque `.val` no cambia en ningún castLE. -/
 theorem Fin.castLE_castLE_eq {n m k : ℕ}
     (h₁ : n ≤ m) (h₂ : m ≤ k) (i : Fin n) :
     (i.castLE h₁).castLE h₂ = i.castLE (Nat.le_trans h₁ h₂) :=
   Fin.ext rfl  -- ambos tienen .val = i.val
 
-/-- Reflexividad de castLE: castLE le_refl es la identidad. -/
+/-- Reflexivity de castLE: castLE le_refl es la identidad. -/
 theorem Fin.castLE_refl_eq {n : ℕ} (h : n ≤ n) (i : Fin n) :
     i.castLE h = i :=
   Fin.ext rfl
@@ -142,10 +142,10 @@ theorem Fin.castLE_refl_eq {n : ℕ} (h : n ≤ n) (i : Fin n) :
 --   `i.castLE (Nat.le_of_lt_succ (Nat.lt_of_lt_pred (by omega)))`
 --   ↳ omega no puede ver `L.depth ≤ L'.depth` (fuera de alcance).
 --
--- Solución: usar forma existencial `∃ h, ...` para que la prueba `h`
+-- Solución: usar forma existencial `∃ h, ...` para que la proof `h`
 -- esté disponible al construir `i.castLE h`.
 
-/-- Una torre L' extiende L si existe una prueba `h : L.depth ≤ L'.depth`
+/-- Una torre L' extiende L si existe una proof `h : L.depth ≤ L'.depth`
     tal que los primeros `L.depth` pasos de L' coinciden con los de L.
 
     La forma `∃ h, ...` (en lugar de `... ∧ ∀ i, ... castLE h ...`)
@@ -154,13 +154,13 @@ def isSubTower (L L' : LiouvilleTower) : Prop :=
   ∃ h : L.depth ≤ L'.depth,
     ∀ i : Fin L.depth, L.steps i = L'.steps (i.castLE h)
 
-/-- La relación de extensión es reflexiva. -/
+/-- La EXTENSION RELATION is reflexive. -/
 theorem isSubTower_refl (L : LiouvilleTower) : L.isSubTower L :=
   ⟨Nat.le_refl _, fun i => by
     -- castLE (le_refl n) i = i  por Fin.ext rfl; congr 1 cierra el goal
     congr 1⟩
 
-/-- La relación de extensión es transitiva.
+/-- La EXTENSION RELATION is transitive.
 
     Prueba:
     - La cota se compone: `le_trans h₁₂ h₂₃`
@@ -186,13 +186,13 @@ theorem extends_trans (L₁ L₂ L₃ : LiouvilleTower)
 end LiouvilleTower
 
 -- ============================================================
--- §3. LiouvilleLevel: NIVEL MÍNIMO DE CADA FUNCIÓN
+-- §3. LiouvilleLevel: MINIMUM LEVEL FOR EACH FUNCTION
 -- ============================================================
 --
--- El nivel de una función elemental es la profundidad mínima
+-- El nivel de una función elemental es la depth mínima
 -- de torre necesaria para representarla.
 --
--- Correspondencia con K_EML (establecida en ECT-05):
+-- CORRESPONDENCE con K_EML (establecida en ECT-05):
 --
 --   K_EML = 1 → nivel 0  (constante 1)
 --   K_EML = 2 → nivel 1  (e, e^x)
@@ -201,10 +201,10 @@ end LiouvilleTower
 --   K_EML = ∞ → fuera de toda torre finita (erf, Ei, ζ, Γ)
 
 set_option linter.unusedVariables false in
-/-- El nivel mínimo en la Torre de Liouville de una función elemental,
+/-- El minimum level en la Liouville Tower de una función elemental,
     codificado como el número mínimo de extensiones necesarias. -/
 noncomputable def liouville_level_of (φ : ℂ → ℂ) : ℕ := 0
-  -- placeholder: valor real requiere inducción formal sobre la Torre de Liouville
+  -- placeholder: valor real requiere inducción formal sobre la Liouville Tower
   -- (φ se conserva como parámetro para extensiones futuras del proyecto)
 
 -- Lemas de nivel para funciones canónicas
@@ -214,10 +214,10 @@ theorem level_const_one : liouville_level_of (fun _ => (1 : ℂ)) = 0 := by
   simp [liouville_level_of]
 
 -- ============================================================
--- §4. OPERACIONES DE CAMPO DENTRO DE LA TORRE
+-- §4. FIELD OPERATIONS WITHIN THE TOWER
 -- ============================================================
 --
--- El campo elemental E es cerrado bajo:
+-- El elementary field E es closed bajo:
 --   (i)  Operaciones de campo: +, -, ×, ÷
 --   (ii) Exponenciación: θ ↦ exp(θ)
 --   (iii) Logaritmo: θ ↦ log(θ)
@@ -226,7 +226,7 @@ theorem level_const_one : liouville_level_of (fun _ => (1 : ℂ)) = 0 := by
 --   f(x,y) = exp(x) - log(y)  genera (i), (ii), (iii) por bootstrapping.
 
 set_option linter.unusedVariables false in
-/-- Cerradura bajo exp: si φ tiene nivel n, entonces exp∘φ tiene nivel ≤ n+1. -/
+/-- closure bajo exp: si φ tiene nivel n, entonces exp∘φ tiene nivel ≤ n+1. -/
 theorem tower_closed_exp (n : ℕ) (φ : ℂ → ℂ)
     (hφ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = φ z) :
     ∃ t' : EMLTerm, ∀ z : ℂ, EMLTerm.eval t' z = Complex.exp (φ z) := by
@@ -236,7 +236,7 @@ theorem tower_closed_exp (n : ℕ) (φ : ℂ → ℂ)
     rw [ht]⟩
 
 set_option linter.unusedVariables false in
-/-- Cerradura bajo log: si φ tiene nivel n, entonces log∘φ tiene nivel ≤ n+1.
+/-- closure bajo log: si φ tiene nivel n, entonces log∘φ tiene nivel ≤ n+1.
     La prueba requiere condiciones de rama para eval_tLog:
     (hz)  : φ z ≠ 0 para todo z
     (hbr) : im(log(φ z)) ∈ Ioo(−π, π) para todo z  -/
@@ -250,7 +250,7 @@ theorem tower_closed_log (n : ℕ) (φ : ℂ → ℂ)
     rw [EMLTerm.eval_tLog t z (ht z ▸ hz z) (ht z ▸ hbr z)]
     rw [ht]⟩
 
-/-- Cerradura bajo resta (= f directo): testigo explícito via app. -/
+/-- closure bajo resta (= f directo): witness explícito via app. -/
 theorem tower_closed_subtract (φ ψ : ℂ → ℂ)
     (hφ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = φ z)
     (hψ : ∃ t : EMLTerm, ∀ z : ℂ, EMLTerm.eval t z = ψ z) :
@@ -262,12 +262,12 @@ theorem tower_closed_subtract (φ ψ : ℂ → ℂ)
     rw [hφeq, hψeq]⟩
 
 -- ============================================================
--- §5. CORRESPONDENCIA LiouvilleLevel ↔ K_EML
+-- §5. CORRESPONDENCE LiouvilleLevel ↔ K_EML
 -- ============================================================
 --
 -- Este es el puente central entre ECT-01 (Kolmogorov K) y ECT-07
 -- (límites de expresividad). Establece que K_EML es una
--- codificación computable del nivel en la Torre de Liouville.
+-- codificación computable del nivel en la Liouville Tower.
 --
 -- La biyección es:
 --   K_EML = 1 ↔ nivel 0   (L₀: constantes)
@@ -312,7 +312,7 @@ def IsLiouvilleElementaryComplex (f : ℂ → ℂ) : Prop :=
 -- La constante `1` en el par generador {1, eml} NO es un artefacto de
 -- construcción, sino una NECESIDAD MATEMÁTICA demostrada por:
 --
--- Teorema de Obstrucción del Ideal Diagonal (P3, Thm. 1):
+-- Teorema de DIAGONAL IDEAL OBSTRUCTION (P3, Thm. 1):
 --   Si f(x,x) ≡ c en la categoría holomorfa o analítica real, entonces
 --   todo germen de término unario del clon generado por f es congruente
 --   a c módulo el ideal maximal. En particular:
@@ -324,7 +324,7 @@ def IsLiouvilleElementaryComplex (f : ℂ → ℂ) : Prop :=
 -- sin información externa. No existe operador binario analítico con
 -- diagonal constante que pueda generar más de una constante.
 --
--- Consecuencia en Lean: los axioms elementary_complex_exp_ax y
+-- Consequence en Lean: los axioms elementary_complex_exp_ax y
 -- elementary_complex_log_ax son consistentes con esta restricción;
 -- la versión sin axioms (EMLTermV) hace explícita la constante 1
 -- como la única semilla posible del sistema.
@@ -333,7 +333,7 @@ theorem elementary_complex_one :
   ⟨EMLTerm.one, fun z => by simp [EMLTerm.eval]⟩
 
 -- ─────────────────────────────────────────────────────────────────────
--- LIMITACIÓN ARQUITECTÓNICA DOCUMENTADA
+-- DOCUMENTED ARCHITECTURAL LIMITATION
 -- ─────────────────────────────────────────────────────────────────────
 -- `EMLTerm.eval t z` es siempre constante en z: el único átomo base es
 -- `one` que devuelve 1, y `app` solo pasa z recursivamente sin usarlo
@@ -346,7 +346,7 @@ theorem elementary_complex_one :
 --
 -- La versión CORRECTA usa IsLiouvilleElementaryComplexV (EMLTermV-based)
 -- definida en Extended.lean §12, donde:
---   • elementary_exp_V  : ✅ PROBADO sin sorry (testigo: tExp var)
+--   • elementary_exp_V  : ✅ PROBADO sin sorry (witness: tExp var)
 --   • elementary_log_V  : 📌 axiom en Extended.lean (limitación de rama ℂ)
 --
 -- Estos axioms se mantienen por compatibilidad con el resto de Liouville.lean.
@@ -385,13 +385,13 @@ theorem elementary_complex_closed_f
 -- §7. EL AXIOMA DE SCHANUEL COMO EXTENSIÓN DE LA TORRE
 -- ============================================================
 --
--- La Conjetura de Schanuel (1960) afirma:
+-- La conjecture de Schanuel (1960) afirma:
 --
---   Para z₁, ..., zₙ ∈ ℂ linealmente independientes sobre ℚ,
+--   Para z₁, ..., zₙ ∈ ℂ linealmente independings sobre ℚ,
 --   el grado de trascendencia de {z₁,...,zₙ, e^{z₁},...,e^{zₙ}}
 --   sobre ℚ es al menos n.
 --
--- En términos de la Torre de Liouville:
+-- En términos de la Liouville Tower:
 --   Schanuel ⟹ no hay relaciones algebraicas "inesperadas" entre
 --   los elementos de la torre.
 --
@@ -399,7 +399,7 @@ theorem elementary_complex_closed_f
 --   Schanuel ⟹ Th(ℝ, exp) es decidible (Wilkie, 1996)
 --   ⟹ El word problem de EML dentro de E es decidible.
 
-/-- El axioma de Schanuel, enunciado para n = 2 (el caso más común en EML):
+/-- El axioma de Schanuel, statement para n = 2 (el caso más común en EML):
     Si z₁, z₂ ∈ ℂ son linealmente independientes sobre ℚ, entonces
     {z₁, z₂, e^{z₁}, e^{z₂}} tiene grado de trascendencia ≥ 2 sobre ℚ.
 
@@ -409,7 +409,7 @@ axiom schanuel_two (z₁ z₂ : ℂ)
     (h_indep : ∀ (q₁ q₂ : ℚ), (q₁ : ℂ) * z₁ + (q₂ : ℂ) * z₂ = 0 → q₁ = 0 ∧ q₂ = 0) :
     True  -- placeholder: grado de trascendencia ≥ 2 (no disponible en Mathlib)
 
-/-- Consecuencia de Schanuel: e y π son algebraicamente independientes sobre ℚ.
+/-- Consequence de Schanuel: e y π son algebraicamente independings sobre ℚ.
     (Esta es una consecuencia estándar de la Conjetura de Schanuel.)
     placeholder: Polynomial.aeval requiere más estructura de transcendencia. -/
 theorem schanuel_e_pi_indep : True := trivial
@@ -430,13 +430,13 @@ theorem word_problem_under_schanuel (t s : EMLTerm) :
 --
 -- Este es el teorema central de ECT-08 + Liouville:
 --
---   Todo árbol EMLTerm representa una función en la Torre de Liouville.
+--   Todo árbol EMLTerm representa una función en la Liouville Tower.
 --
 -- Dirección 1 (fácil): EMLTerm → Liouville.
 --   Por inducción estructural: one ∈ L₀, app t s ∈ L_{n+1} si t,s ∈ Lₙ.
 --
 -- Dirección 2 (difícil): Liouville → EMLTerm.
---   Requiere construir el testigo EMLTerm para cada función de la torre.
+--   Requiere construir el witness EMLTerm para cada función de la torre.
 --   Esta es la esencia del Thm. de Odrzywolek.
 
 /-- DIRECCIÓN 1: Todo árbol EMLTerm representa una función elemental.
@@ -455,14 +455,14 @@ theorem eml_term_is_elementary (t : EMLTerm) :
       simp [EMLTerm.eval]
       rw [← ht', ← hs']⟩
 
-/-- DIRECCIÓN 2 (Odrzywolek Thm. 1): Toda función elemental tiene testigo EMLTerm.
+/-- DIRECCIÓN 2 (Odrzywolek Thm. 1): Toda función elemental tiene witness EMLTerm.
     La prueba completa requiere inducción sobre la Torre de Liouville.
     La usamos como axioma (la cadena de bootstrapping la verifica para primitivas). -/
 axiom odrzywolek_completeness :
     ∀ (f : ℂ → ℂ), IsLiouvilleElementaryComplex f →
     ∃ (t : EMLTerm) (z : ℂ), EMLTerm.eval t z = f z
 
-/-- COROLARIO: La correspondencia entre EMLTerm y funciones elementales es bijectiva
+/-- COROLARIO: La CORRESPONDENCE entre EMLTerm y funciones elementales es bijectiva
     (salvo evaluación). Esto es la completitud funcional de EML. -/
 theorem eml_liouville_bijection :
     ∀ f : ℂ → ℂ,
@@ -480,11 +480,11 @@ theorem eml_liouville_bijection :
 -- ============================================================
 --
 -- Demostramos que las operaciones de campo clásicas (suma, producto,
--- cociente) preservan la elementalidad, usando los testigos de Basic.lean.
+-- cociente) preservan la elementalidad, usando los witnesses de Basic.lean.
 --
 -- REGLA Ioo/Ioc (invariante de rama — fuente canónica: Basic.lean §R2):
 --   • Hipótesis que se pasan a eval_tLog → deben ser Set.Ioo(-π, π).
---     Razón: eval_tLog niega la parte imaginaria internamente. Si im ∈ Ioo
+--     Reason: eval_tLog niega la parte imaginaria internamente. Si im ∈ Ioo
 --     entonces -im ∈ Ioo ⊆ Ioc (válido para log_exp). Si im ∈ Ioc y im = π,
 --     entonces -im = -π ∉ Ioc(-π, π] → log_exp falla.
 --   • Hipótesis sobre resultados de tLog o Im directas → Set.Ioc(-π, π).
@@ -564,7 +564,7 @@ theorem elementary_inverse (φ : ℂ → ℂ)
     rw [hφeq]⟩
 
 -- ============================================================
--- §10. RESUMEN: TABLA DE LA TORRE DE LIOUVILLE EN LEAN 4
+-- §10. SUMMARY: TABLA DE LA Liouville Tower EN LEAN 4
 -- ============================================================
 --
 --  NIVEL  │  EXTENSIÓN       │  FUNCIONES            │  K_EML  │  Torre Lean 4
@@ -576,25 +576,25 @@ theorem elementary_inverse (φ : ℂ → ℂ)
 --    L₄   │  log∘invtrig     │  cosh, x^x, hypot     │  6      │  LiouvilleTower.L_invtrig
 --    L∞   │  límite          │  erf, Ei, li, ζ, Γ   │  ∞      │  — (fuera de toda torre)
 --
---  ESTADO ACTUAL DE ECT-08:
---    ✅ §1-§4: LiouvilleStep, LiouvilleTower, cerradura
+--  CURRENT STATUS DE ECT-08:
+--    ✅ §1-§4: LiouvilleStep, LiouvilleTower, closure
 --    ✅ §4:    tower_closed_log PROBADO (con hips de rama: hz, hbr)
---    ✅ §5:    Correspondencia K_EML ↔ nivel (lemas concretos)
+--    ✅ §5:    CORRESPONDENCE K_EML ↔ nivel (lemas concretos)
 --    ✅ §6:    IsLiouvilleElementaryComplex y sus propiedades
---    ✅ §7:    Axioma de Schanuel enunciado formalmente
+--    ✅ §7:    Axioma de Schanuel statement formalmente
 --    ✅ §8:    Dirección 1 (EMLTerm → Elemental) PROBADA sin sorry
 --    📌 §8:    Dirección 2 (Elemental → EMLTerm) como axiom (Odrzywolek Thm.1)
---    📌 §6:    elementary_complex_exp/log como axioms honestos (EMLTerm sin var)
---    ✅ §9:    Cerradura bajo +, ×, ⁻¹ PROBADA (con hips de rama en ℂ)
---    ✅ §10A:  diagonal_obstruction_ax  — axiom honesto (P3 Thm. 1)
---    ✅ §10A:  hardy_field_obstruction  — axiom honesto (P3 Thm. 2)
---    ✅ ESTADO: 0 sorrys reales — 6 axioms honestos (ver tabla)
+--    📌 §6:    elementary_complex_exp/log como honest axioms (EMLTerm sin var)
+--    ✅ §9:    closure bajo +, ×, ⁻¹ PROBADA (con hips de rama en ℂ)
+--    ✅ §10A:  diagonal_obstruction_ax  — honest axiom (P3 Thm. 1)
+--    ✅ §10A:  hardy_field_obstruction  — honest axiom (P3 Thm. 2)
+--    ✅ ESTADO: 0 sorrys reales — 6 honest axioms (ver tabla)
 --
 --  AXIOMS DECLARADOS EN ESTE ARCHIVO:
---    • schanuel_two                — Conjetura de Schanuel (prob. abierto)
+--    • schanuel_two                — conjecture de Schanuel (prob. abierto)
 --    • odrzywolek_completeness     — Thm. 1 de Odrzywolek (dirección difícil)
---    • elementary_complex_exp_ax   — exp ∈ E (testigo EMLTermV.var, pendiente puente)
---    • elementary_complex_log_ax   — log ∈ E (testigo EMLTermV.var, pendiente puente)
+--    • elementary_complex_exp_ax   — exp ∈ E (witness EMLTermV.var, pending puente)
+--    • elementary_complex_log_ax   — log ∈ E (witness EMLTermV.var, pending puente)
 --    • diagonal_obstruction_ax     — P3 Thm. 1: única constante del clon es c
 --    • hardy_field_obstruction     — P3 Thm. 2: sin/cos imposibles en LE₂ real
 --
@@ -604,14 +604,14 @@ theorem elementary_inverse (φ : ℂ → ℂ)
 --    • eval_tTimes  en ℂ da φ(z)·ψ(z)/e          [exacta en EMLTermV.tTimesV]
 
 -- ============================================================
--- §10A. OBSTRUCCIONES ANALÍTICAS (P3 — Lamharzi Alaoui, 2026)
+-- §10A. ANALYTIC OBSTRUCTIONS (P3 — Lamharzi Alaoui, 2026)
 -- ============================================================
 --
--- Los dos teoremas de obstrucción del Paper P3 se formalizan como
--- axioms honestos. Requieren la teoría de gérmenes analíticos y
+-- Los dos teoremas de obstruction del Paper P3 se formalizesn como
+-- honest axioms. Requieren la teoría de gérmenes analíticos y
 -- campos de Hardy, aún fuera del alcance de Mathlib 4.
 
-/-- Obstrucción del Ideal Diagonal (P3, Thm. 1 — Lamharzi Alaoui 2026).
+/-- DIAGONAL IDEAL OBSTRUCTION (P3, Thm. 1 — Lamharzi Alaoui 2026).
     Si un germen binario analítico f satisface f(x,x) ≡ c (diagonal constante),
     entonces todo término CONSTANTE (sin variable libre) del clon generado por f
     evalúa exactamente a c. En particular, c es la única constante del clon.
@@ -632,7 +632,7 @@ axiom diagonal_obstruction_ax
     (ht_const : ∀ z w : ℂ, EMLTerm.eval t z = EMLTerm.eval t w) :
     ∀ z : ℂ, EMLTerm.eval t z = c
 
-/-- Obstrucción del Campo de Hardy (P3, Thm. 2 — Lamharzi Alaoui 2026).
+/-- Hardy Field Obstruction (P3, Thm. 2 — Lamharzi Alaoui 2026).
     Ninguna función en el campo logarítmico-exponencial real LE₂ puede
     representar sin x o cos x como término unario de un clon real.
 
@@ -646,7 +646,7 @@ axiom hardy_field_obstruction :
       ∀ z : ℂ, EMLTerm.eval t z = Complex.sin z
 
 -- ============================================================
--- §11. VERIFICACIÓN DE TIPOS (documentación interna)
+-- §11. TYPE CHECKING (internal documentation)
 -- ============================================================
 -- Los #check siguientes producen mensajes informativos en el LSP.
 -- No son errores ni warnings — confirman que los teoremas compilan.

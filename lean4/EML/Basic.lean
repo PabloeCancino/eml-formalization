@@ -357,24 +357,24 @@ theorem eval_tSubtract (t s : EMLTerm) (z : ℂ)
   -- goal: exp(log ⟦t⟧(z)) - log(exp ⟦s⟧(z)) = ⟦t⟧(z) - ⟦s⟧(z)
   rw [Complex.exp_log ht, Complex.log_exp hbrs.1 hbrs.2]
 
--- R4 semántico: ⟦tMinus(t)⟧(z) = -⟦t⟧(z)
+-- R4 semantic: ⟦tMinus(t)⟧(z) = -⟦t⟧(z)
 -- tMinus t = app (tLog one) (tExp t)
 -- proof: ⟦tLog one⟧(z) = log(1) = 0; luego exp(0) - log(exp(⟦t⟧(z))) = 1 - 0 - ⟦t⟧(z)
 -- Pero exp(0) = 1, log(exp(w)) = w cuando im(w) ∈ Ioc(−π,π).
--- Resultado: 1 - ... — ESPERA: la definición de tMinus es app (tLog one) (tExp t),
--- así ⟦tMinus t⟧(z) = exp(⟦tLog one⟧(z)) - log(⟦tExp t⟧(z))
+-- Result: 1 - ... — NOTE: the definition of tMinus is app (tLog one) (tExp t),
+-- so \u27e6tMinus t\u27e7(z) = exp(\u27e6tLog one\u27e7(z)) - log(\u27e6tExp t\u27e7(z))
 --                    = exp(log 1)           - log(exp(⟦t⟧(z)))
 --                    = exp(0)               - ⟦t⟧(z)   [log_exp]
---                    = 1 - ⟦t⟧(z)          — NO es -⟦t⟧(z) en ℂ con log 1 = 0
--- El resultado correcto en ℂ es: ⟦tMinus t⟧(z) = 1 - ⟦t⟧(z), no -⟦t⟧(z).
--- La negación exacta requiere EReal con log(0) = -∞ (ver Extended.lean tMinusV).
-/-- En ℂ, tMinus evalúa a `1 - ⟦t⟧(z)` (NO a `-⟦t⟧(z)`).
-    La negación exacta usa EMLTermV.tMinusV en Extended.lean. -/
+--                    = 1 - ⟦t⟧(z)          — NO es -⟦t⟧(z) in ℂ with log 1 = 0
+-- The correct result in ℂ is: ⟦tMinus t⟧(z) = 1 - ⟦t⟧(z), no -⟦t⟧(z).
+-- The exact negation requires EReal con log(0) = -∞ (ver Extended.lean tMinusV).
+/-- In ℂ, tMinus evaluates to `1 - ⟦t⟧(z)` (NO a `-⟦t⟧(z)`).
+    Exact negation uses EMLTermV.tMinusV in Extended.lean. -/
 theorem eval_tMinus (t : EMLTerm) (z : ℂ)
     (hbrt : (⟦t⟧(z)).im ∈ Set.Ioc (-Real.pi) Real.pi) :
     ⟦tMinus t⟧(z) = 1 - ⟦t⟧(z) := by
   simp only [tMinus, eval_app, eval_tExp]
-  -- ⟦tLog one⟧(z) = 0 porque log(1) = 0
+  -- ⟦tLog one⟧(z) = 0 because log(1) = 0
   have hlog1 : ⟦tLog one⟧(z) = 0 := by
     rw [eval_tLog one z (by simp [eval_one])]
     · simp [eval_one]
@@ -382,13 +382,13 @@ theorem eval_tMinus (t : EMLTerm) (z : ℂ)
       exact ⟨by linarith [Real.pi_pos], by linarith [Real.pi_pos]⟩
   rw [hlog1, Complex.exp_zero, Complex.log_exp hbrt.1 hbrt.2]
 
--- R5 semántico: ⟦tPlus(t, s)⟧(z) = ⟦t⟧(z) + ⟦s⟧(z)
+-- R5 semantic: ⟦tPlus(t, s)⟧(z) = ⟦t⟧(z) + ⟦s⟧(z)
 -- tPlus t s = tSubtract t (tMinus s) = t - (1 - s) = t + s - 1
--- NOTA: en ℂ, eval_tMinus da 1 - s, así que:
+-- NOTA: In ℂ, eval_tMinus gives 1 - s, so:
 --   tSubtract t (tMinus s) = t - (1 - s) = t + s - 1  — NO es t + s.
--- La suma exacta requiere EReal (ver ereval_tPlusV en Extended.lean).
-/-- En ℂ, tPlus evalúa a `⟦t⟧(z) + ⟦s⟧(z) - 1`.
-    La suma exacta usa EMLTermV.tPlusV en Extended.lean. -/
+-- The exact addition requires EReal (ver ereval_tPlusV en Extended.lean).
+/-- In ℂ, tPlus evaluates to `⟦t⟧(z) + ⟦s⟧(z) - 1`.
+    The exact sum uses EMLTermV.tPlusV in Extended.lean. -/
 theorem eval_tPlus (t s : EMLTerm) (z : ℂ)
     (ht    : ⟦t⟧(z) ≠ 0)
     (hbrt  : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi)
@@ -400,13 +400,13 @@ theorem eval_tPlus (t s : EMLTerm) (z : ℂ)
   · rw [eval_tMinus s z hbrs]; ring
   · rw [eval_tMinus s z hbrs]; exact hbrs2
 
--- R6 semántico: ⟦tInv(t)⟧(z) = Complex.exp(1) / ⟦t⟧(z)
+-- R6 semantic: ⟦tInv(t)⟧(z) = Complex.exp(1) / ⟦t⟧(z)
 -- tInv t = tExp(tMinus(tLog t)).
--- En ℂ: tMinus da 1 - x, así tMinus(tLog t) evalúa a 1 - log(t).
+-- In ℂ: tMinus gives 1 - x, so tMinus(tLog t) evaluates to 1 - log(t).
 -- Resultado: exp(1 - log(t)) = exp(1) · exp(-log(t)) = e / t.
--- El inverso exacto 1/t requiere EReal (tMinusV da -log(t) = log(1/t)).
-/-- En ℂ, tInv evalúa a `Complex.exp 1 / ⟦t⟧(z)` (NO a `(⟦t⟧(z))⁻¹`).
-    El inverso exacto usa EMLTermV.tInvV en Extended.lean. -/
+-- The exact inverse 1/t requires EReal (tMinusV da -log(t) = log(1/t)).
+/-- In ℂ, tInv evaluates to `Complex.exp 1 / ⟦t⟧(z)` (NO a `(⟦t⟧(z))⁻¹`).
+    The exact inverse uses EMLTermV.tInvV in Extended.lean. -/
 theorem eval_tInv (t : EMLTerm) (z : ℂ)
     (ht   : ⟦t⟧(z) ≠ 0)
     (hbrt : (Complex.log (⟦t⟧(z))).im ∈ Set.Ioo (-Real.pi) Real.pi) :
@@ -419,14 +419,14 @@ theorem eval_tInv (t : EMLTerm) (z : ℂ)
   rw [Complex.exp_sub, Complex.exp_log ht]
 
 
--- R7 semántico: ⟦tTimes(t, s)⟧(z) = ⟦t⟧(z) * ⟦s⟧(z)
+-- R7 semantic: ⟦tTimes(t, s)⟧(z) = ⟦t⟧(z) * ⟦s⟧(z)
 -- tTimes t s = tExp (tPlus (tLog t) (tLog s))
--- En ℂ, eval_tPlus da log(t) + log(s) - 1, así:
+-- In ℂ, eval_tPlus gives log(t) + log(s) - 1, so:
 --   tExp(tPlus(tLog t, tLog s)) = exp(log t + log s - 1) = t·s/e  — NO t·s
--- La multiplicación exacta requiere EReal (ver ereval_tTimesV en Extended.lean).
--- Aquí documentamos el resultado real en ℂ:
-/-- En ℂ, tTimes evalúa a `⟦t⟧(z) * ⟦s⟧(z) / Complex.exp 1`.
-    El producto exacto usa EMLTermV.tTimesV en Extended.lean. -/
+-- The exact multiplication requires EReal (ver ereval_tTimesV en Extended.lean).
+-- Here we document the actual result in ℂ:
+/-- In ℂ, tTimes evaluates to `⟦t⟧(z) * ⟦s⟧(z) / Complex.exp 1`.
+    The exact product uses EMLTermV.tTimesV in Extended.lean. -/
 theorem eval_tTimes (t s : EMLTerm) (z : ℂ)
     (ht   : ⟦t⟧(z) ≠ 0)
     (hs   : ⟦s⟧(z) ≠ 0)
@@ -451,17 +451,17 @@ theorem eval_tTimes (t s : EMLTerm) (z : ℂ)
   ring
 
 -- ============================================================
--- §8. witnesses DE LA bootstrapping chain
+-- §8. witnesses of the bootstrapping chain
 -- ============================================================
 --
--- Cada función elemental de la Tabla 1 de Odrzywołek tiene un
--- witness concreto: un árbol EMLTerm con K ≤ 6.
--- Esta sección verifica la complejidad de los witnesses principales.
+-- Each elementary function in Odrzywołek Table 1 has a
+-- concrete witness: an EMLTerm tree with K ≤ 6.
+-- This section verifies the complexity of the main witnesses.
 
 section BootstrappingChain
 
--- witness 1: la constante e
-/-- t_e es el árbol que representa la constante e. -/
+-- witness 1: the constant e
+/-- t_e is the tree that represents the constant e. -/
 def t_e : EMLTerm := tExp one
 
 theorem t_e_complexity : K[t_e] = 2 := by simp [t_e, tExp, complexity]
@@ -475,20 +475,20 @@ def t_Log_template : EMLTerm := tLog one  -- instancia en x=1
 theorem t_Log_template_complexity : K[t_Log_template] = 4 := by
   simp [t_Log_template, complexity_tLog]
 
--- witness 4: Subtract — árbol con K=4 (ambos argumentos de hoja)
+-- witness 4: Subtract — tree with K=4 (both leaf arguments)
 def t_Subtract_11 : EMLTerm := tSubtract one one
 
 theorem t_Subtract_11_complexity : K[t_Subtract_11] = 6 := by
   simp only [t_Subtract_11, complexity_tSubtract, complexity_one_eq]
 
--- Cota para Inv (K = 10 con argumento hoja)
+-- Bound for Inv (K = 10 with leaf argument)
 def t_Inv_1 : EMLTerm := tInv one
 
 theorem t_Inv_1_complexity : K[t_Inv_1] = 10 := by
   simp only [t_Inv_1, tInv, complexity_tExp, complexity_tMinus, complexity_tLog,
              complexity_one_eq]
 
--- Cota para Times (K = 18 con argumentos hoja)
+-- Bound for Times (K = 18 con argumentos hoja)
 def t_Times_11 : EMLTerm := tTimes one one
 
 theorem t_Times_11_complexity : K[t_Times_11] = 18 := by
@@ -501,32 +501,32 @@ end BootstrappingChain
 -- §9. K bound ≤ 6 — TEOREMA DE ODRZYWOŁEK EN LENGUAJE K
 -- ============================================================
 --
--- El CENTRAL RESULT del artículo (Odrzywołek v2, 2026, Tabla 4)
--- afirma que toda función elemental de la Tabla 1 tiene K_EML ≤ 6
--- según el COMPILADOR EML (cadena de reducción estándar).
+-- The central result of the paper (Odrzywołek v2, 2026, Table 4)
+-- states that every elementary function in Table 1 has K_EML ≤ 6
+-- according to the EML COMPILER (standard reduction chain).
 --
--- IMPORTANTE — Dos cotas distintas (Paper P1, Tabla 4):
+-- IMPORTANT — Two distinct bounds (Paper P1, Table 4):
 --
---   (a) COTA DEL COMPILADOR EML: K obtenido siguiendo la cadena de
---       bootstrapping estándar de Odrzywołek. Esta es la cota que
+--   (a) EML COMPILER BOUND: K obtained by following the
+--       standard Odrzywołek bootstrapping chain. This is the bound
 --       proofn los witnesses tExp, tLog, tMinus, etc.
---       Ejemplo: K(negación) = 57 según el compilador.
+--       Example: K(negation) = 57 according to the compiler.
 --
---   (b) COTA DE BÚSQUEDA DIRECTA: K obtenido por búsqueda
---       exhaustiva sobre todos los árboles de depth creciente.
---       Es óptima pero no constructiva en general.
---       Ejemplo: K(negación) = 15 según búsqueda directa (Tabla 4, col. derecha).
+--   (b) DIRECT SEARCH BOUND: K obtained by exhaustive
+--       exhaustiva sobre todos los árboles of increasing depth.
+--       It is optimal but not constructive in general.
+--       Example: K(negation) = 15 by direct search (Tabla 4, col. derecha).
 --
--- Los teoremas de este §9 proofn la cota (a) del compilador.
--- La cota (b) es un problema de búsqueda óptima abierto.
+-- The theorems in this §9 prove the compiler bound (a).
+-- Bound (b) is an open optimal search problem.
+-- Enumeration of primitives with their minimum K
+-- (K calculated with leaf argument `one`, compiler bound)
 
--- Enumeración de las primitivas con su K mínimo
--- (K calculado con argumento hoja `one`, cota del compilador)
+/-- Table of minimum K complexities for basic primitives
+according to the EML compiler string (not the direct search).
 
-/-- Tabla de complejidades K mínimas para las primitivas básicas
-    según la cadena del COMPILADOR EML (no la búsqueda directa).
-    Nota: tSqrt como composición tiene K[tSqrt one] = 41; el testigo
-    óptimo con K ≤ 6 requiere un árbol directo (trabajo futuro §9B). -/
+Note: tSqrt as a composition has K[tSqrt one] = 41; the optimal witness
+with K ≤ 6 requires a direct tree (future work §9B).
 theorem primitives_k_bound :
     K[tExp one] ≤ 6 ∧
     K[tLog one] ≤ 6 ∧
@@ -536,22 +536,24 @@ theorem primitives_k_bound :
   · simp only [complexity_tLog, complexity_one_eq]; omega   -- 4 ≤ 6
   · simp only [complexity_tMinus, complexity_one_eq]; omega  -- 6 ≤ 6
 
--- ============================================================
+--
+
+-- ==============================================================
 -- §10. Completeness theorem (statement)
--- ============================================================
+-- ==============================================================
 --
--- Este es el teorema central abierto: toda función elemental es
--- representable como árbol EMLTerm.
+-- This is the central open theorem: every elementary function is
+-- representable as an EMLTerm tree.
 --
--- La bootstrapping chain (§8) proporciona los witnesses
--- constructivos; la Verification formal se completa en
+-- The bootstrapping chain (§8) provides the witnesses
+-- constructive; Formal Verification is completed in
 -- EML/Completeness.lean (future work).
 
--- Abstracción de "función elemental" — requiere formalizesr el
--- Campo de Liouville; aquí se usa como axioma/hipótesis.
+-- Abstraction of "elementary function" — requires formalizing the
+-- Liouville field; here used as an axiom/hypothesis.
 
 -- class ElementaryFunction (f : ℂ → ℂ) : Prop where
---   in_liouville : f ∈ LiouvilleField
+-- in_liouville : f ∈ LiouvilleField
 
 /-- statement del Teorema de Odrzywołek en Lean 4.
     Los testigos constructivos existen (cadena de bootstrapping);
@@ -563,78 +565,78 @@ theorem eml_completeness_statement :
   intro _ _  -- introduce f y la hipótesis existencial
   trivial    -- cierra el goal True
 
--- ============================================================
--- §11. INDUCCIÓN ESTRUCTURAL SOBRE EMLTerm
--- ============================================================
+-- ==============================================================
+-- §11. STRUCTURAL INDUCTION ON EMLTerm
+-- ==============================================================
 --
--- La inducción estructural sobre EMLTerm es el principal mecanismo
--- de proof en este sistema.
+-- Structural induction on EMLTerm is the main proof
+-- of proof in this system.
 
-/-- Principio de inducción para EMLTerm: análogo al de Peano. -/
+/-- Induction principle for EMLTerm: analogous to Peano's. -/
 theorem eml_induction {P : EMLTerm → Prop}
-    (base : P one)
-    (step : ∀ t s : EMLTerm, P t → P s → P (app t s)) :
-    ∀ t : EMLTerm, P t := by
-  intro t; induction t with
-  | one => exact base
-  | app t s ht hs => exact step t s ht hs
+(base: P one)
+(step : ∀ t s : EMLTerm, P t → P s → P (app t s)) :
+∀ t : EMLTerm, P t := by
+intro t; induction t with
+| one => exact base
+| app t s ht hs => exact step t s ht hs
 
-/-- Toda propiedad monótona en K se demuestra por inducción sobre K.
-    Estrategia: `mono + base` dan `P n` para todo `n ≥ 1` por inducción
-    en ℕ; como `K[t] ≥ 1` siempre, no se necesita inducción sobre el árbol. -/
+/-- Every monotone property in K is proven by induction on K.
+Strategy: `mono + base` gives `P n` for all `n ≥ 1` by induction
+in ℕ; since `K[t] ≥ 1` always, no induction on the tree is needed. -/
 theorem eml_induction_k {P : ℕ → Prop}
-    (mono : ∀ n, P n → P (n + 1))
-    (base : P 1) :
-    ∀ t : EMLTerm, P (K[t]) := by
-  -- Lema auxiliar: P vale para todo n ≥ 1
-  have hP : ∀ n : ℕ, 1 ≤ n → P n := by
-    intro n
-    induction n with
-    | zero      => intro h; omega
-    | succ m ih =>
-      intro _
-      cases m with
-      | zero   => exact base
-      | succ k => exact mono (k + 1) (ih (by omega))
-  -- K[t] ≥ 1 para todo t (por complexity_pos)
-  intro t
-  exact hP (K[t]) (complexity_pos t)
+(mono : ∀ n, P n → P (n + 1))
+(base: P 1) :
+∀ t : EMLTerm, P (K[t]) := by
+-- Auxiliary lemma: P holds for all n ≥ 1
+have hP : ∀ n : ℕ, 1 ≤ n → P n := by
+intro n
+induction n with
+| zero => enter h; omega
+| succ m ih =>
+intro _
+cases m with
+| zero => exact base
+| succ k => exact mono (k + 1) (ih (by omega))
+-- K[t] ≥ 1 for all t (by complexity_pos)
+intro t
+exact hP (K[t]) (complexity_pos t)
 
--- ============================================================
--- §12. NÚMEROS DE CATALAN Y LA GRAMÁTICA EML
--- ============================================================
+-- ==============================================================
+-- §12. CATALAN NUMBERS AND EML GRAMMAR
+-- =============================================================
 --
--- Proposición 1.3 (EML_Axiomatica.md): el número de árboles EMLTerm
--- con exactamente n hojas es el número de Catalan C_{n-1}.
---
--- Para n=1: 1 árbol (one)
--- Para n=2: 1 árbol (app one one)
--- Para n=3: 2 árboles
--- Para n=4: 5 árboles
+-- Proposition 1.3 (EML_Axiomatica.md): The number of EMLTerm trees
+-- with exactly n leaves is the Catalan number C_{n-1}.
+
+-- For n=1: 1 tree (one)
+-- For n=2: 1 tree (approx. one one)
+-- For n=3: 2 trees
+-- For n=4: 5 trees
 -- etc.
 
-/-- Auxiliar con fuel: recursión estructural sobre fuel (≥ depth máxima = n-1). -/
+/-- Auxiliary with fuel: structural recursion over fuel (≥ maximum depth = n-1). -/
 private def termsOfComplexityFuel : ℕ → ℕ → List EMLTerm
-  | _, 0 => []
-  | _, 1 => [one]
-  | 0, _ => []            -- fuel agotado (nunca ocurre si fuel ≥ n)
-  | fuel + 1, n + 2 =>
-    (List.range (n + 1)).flatMap fun k =>
-      let left_k  := k + 1
-      let right_k := n + 1 - k
-      (termsOfComplexityFuel fuel left_k).flatMap fun l =>
-      (termsOfComplexityFuel fuel right_k).map fun r =>
-      app l r
+| _, 0 => []
+| _, 1 => [one]
+| 0, _ => [] -- fuel exhausted (never occurs if fuel ≥ n)
+| fuel + 1, n + 2 =>
+(List.range (n + 1)).flatMap fun k =>
+let left_k := k + 1
+let right_k := n + 1 - k
+(termsOfComplexityFuel fuel left_k).flatMap fun l =>
+(termsOfComplexityFuel fuel right_k).map fun r =>
+app l r
 
-/-- Enumera todos los árboles EMLTerm con complejidad exactamente n. -/
+/-- Enumerates all EMLTerm trees with complexity exactly n. -/
 def termsOfComplexity (n : ℕ) : List EMLTerm :=
-  termsOfComplexityFuel n n
+termsOfComplexityFuel n n
 
--- Verificaciones manuales de conteos
-#eval (termsOfComplexity 1).length  -- debe ser 1
-#eval (termsOfComplexity 2).length  -- debe ser 1
-#eval (termsOfComplexity 3).length  -- debe ser 2
-#eval (termsOfComplexity 4).length  -- debe ser 5
+--Manual count verifications
+#eval (termsOfComplexity 1).length -- must be 1
+#eval (termsOfComplexity 2).length -- must be 1
+#eval (termsOfComplexity 3).length -- must be 2
+#eval (termsOfComplexity 4).length -- must be 5
 
 end EMLTerm
 

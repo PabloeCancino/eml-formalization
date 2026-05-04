@@ -1,25 +1,27 @@
-﻿# Subrepositorio independiente (tiene su propio git)
-SymbolicRegressionPackage/
+# Lean 4 build artifacts
+.lake/
+lake-packages/
+*.olean
+*.ilean
+*.c
+*.o
 
-# Python
-__pycache__/
-*.pyc
-*.pyo
-.venv/
-venv/
+# LaTeX auxiliary files
+paper/*.aux
+paper/*.bbl
+paper/*.blg
+paper/*.log
+paper/*.out
+paper/*.synctex.gz
+paper/*.toc
+paper/*.fls
+paper/*.fdb_latexmk
 
-# Lean / Lake build
-lean4/**/.lake/
-lean4/**/build/
+# PowerShell fix scripts (internal use only)
+lean4/EML/fix_*.ps1
+lean4/EML/translate_*.ps1
 
-# Archivos del sistema
+# OS files
 .DS_Store
 Thumbs.db
 desktop.ini
-
-# VS Code
-.vscode/
-
-# Temporales
-*.tmp
-*.log

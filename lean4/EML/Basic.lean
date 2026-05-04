@@ -1,7 +1,7 @@
-﻿-- ============================================================
+-- ============================================================
 -- EML/Basic.lean
--- formalizestion of the EML operator in Lean 4
--- ECT-08: EML implementation in Lean 4 (formalizestion)
+-- Formalization of the EML operator in Lean 4
+-- ECT-08: EML implementation in Lean 4 (Formalization)
 --
 -- Source: arXiv:2603.21852v2 (Odrzywołek, 2026)
 -- Project: Math_All_in_One — Mathematics Undergraduate Programme, UAN
@@ -451,7 +451,7 @@ theorem eval_tTimes (t s : EMLTerm) (z : ℂ)
   ring
 
 -- ============================================================
--- §8. witnesses of the bootstrapping chain
+-- §8. WITNESSES OF THE BOOTSTRAPPING CHAIN
 -- ============================================================
 --
 -- Each elementary function in Odrzywołek Table 1 has a
@@ -469,13 +469,13 @@ theorem t_e_complexity : K[t_e] = 2 := by simp [t_e, tExp, complexity]
 theorem t_e_eval (z : ℂ) : ⟦t_e⟧(z) = Complex.exp 1 := by
   simp [t_e, eval_tExp, eval_one]
 
--- witness 3: Log(x) con K=4
-def t_Log_template : EMLTerm := tLog one  -- instancia en x=1
+-- Witness 3: Log(x), K = 4
+def t_Log_template : EMLTerm := tLog one  -- instance at x = 1
 
 theorem t_Log_template_complexity : K[t_Log_template] = 4 := by
   simp [t_Log_template, complexity_tLog]
 
--- witness 4: Subtract — tree with K=4 (both leaf arguments)
+-- Witness 4: Subtract — tree with K = 6 (both leaf arguments)
 def t_Subtract_11 : EMLTerm := tSubtract one one
 
 theorem t_Subtract_11_complexity : K[t_Subtract_11] = 6 := by
@@ -488,7 +488,7 @@ theorem t_Inv_1_complexity : K[t_Inv_1] = 10 := by
   simp only [t_Inv_1, tInv, complexity_tExp, complexity_tMinus, complexity_tLog,
              complexity_one_eq]
 
--- Bound for Times (K = 18 con argumentos hoja)
+-- Bound for Times (K = 18 with leaf arguments)
 def t_Times_11 : EMLTerm := tTimes one one
 
 theorem t_Times_11_complexity : K[t_Times_11] = 18 := by
@@ -498,7 +498,7 @@ theorem t_Times_11_complexity : K[t_Times_11] = 18 := by
 end BootstrappingChain
 
 -- ============================================================
--- §9. K bound ≤ 6 — TEOREMA DE ODRZYWOŁEK EN LENGUAJE K
+-- §9. K ≤ 6 BOUND — ODRZYWOŁEK'S THEOREM (K VERSION)
 -- ============================================================
 --
 -- The central result of the paper (Odrzywołek v2, 2026, Table 4)
@@ -508,14 +508,14 @@ end BootstrappingChain
 -- IMPORTANT — Two distinct bounds (Paper P1, Table 4):
 --
 --   (a) EML COMPILER BOUND: K obtained by following the
---       standard Odrzywołek bootstrapping chain. This is the bound
---       proofn los witnesses tExp, tLog, tMinus, etc.
+--       standard Odrzywółek bootstrapping chain. This is the bound
+--       proved by witnesses tExp, tLog, tMinus, etc.
 --       Example: K(negation) = 57 according to the compiler.
 --
---   (b) DIRECT SEARCH BOUND: K obtained by exhaustive
---       exhaustiva sobre todos los árboles of increasing depth.
+--   (b) DIRECT SEARCH BOUND: K obtained by exhaustive search
+--       over all trees of increasing depth.
 --       It is optimal but not constructive in general.
---       Example: K(negation) = 15 by direct search (Tabla 4, col. derecha).
+--       Example: K(negation) = 15 by direct search (Table 4, right column).
 --
 -- The theorems in this §9 prove the compiler bound (a).
 -- Bound (b) is an open optimal search problem.
@@ -555,88 +555,88 @@ theorem primitives_k_bound :
 -- class ElementaryFunction (f : ℂ → ℂ) : Prop where
 -- in_liouville : f ∈ LiouvilleField
 
-/-- statement del Teorema de Odrzywołek en Lean 4.
-    Los testigos constructivos existen (cadena de bootstrapping);
-    la demostración formal es trabajo en progreso. -/
+/-- Statement of Odrzywółek's Theorem in Lean 4.
+    Constructive witnesses exist (bootstrapping chain);
+    the formal proof is work in progress. -/
 theorem eml_completeness_statement :
     ∀ (f : ℂ → ℂ),
       (∃ t : EMLTerm, ∀ z : ℂ, ⟦t⟧(z) = f z) →
       True := by
-  intro _ _  -- introduce f y la hipótesis existencial
-  trivial    -- cierra el goal True
+  intro _ _  -- introduce f and the existential hypothesis
+  trivial    -- closes the goal True
 
 -- ==============================================================
 -- §11. STRUCTURAL INDUCTION ON EMLTerm
 -- ==============================================================
 --
 -- Structural induction on EMLTerm is the main proof
--- of proof in this system.
+-- mechanism in this system.
 
 /-- Induction principle for EMLTerm: analogous to Peano's. -/
 theorem eml_induction {P : EMLTerm → Prop}
-(base: P one)
-(step : ∀ t s : EMLTerm, P t → P s → P (app t s)) :
-∀ t : EMLTerm, P t := by
-intro t; induction t with
-| one => exact base
-| app t s ht hs => exact step t s ht hs
+    (base : P one)
+    (step : ∀ t s : EMLTerm, P t → P s → P (app t s)) :
+    ∀ t : EMLTerm, P t := by
+  intro t; induction t with
+  | one       => exact base
+  | app t s ht hs => exact step t s ht hs
 
-/-- Every monotone property in K is proven by induction on K.
-Strategy: `mono + base` gives `P n` for all `n ≥ 1` by induction
-in ℕ; since `K[t] ≥ 1` always, no induction on the tree is needed. -/
+/-- Every monotone property in K is proved by induction on K.
+    Strategy: `mono + base` give `P n` for all `n ≥ 1` by induction
+    in ℕ; since `K[t] ≥ 1` always, induction on the tree is not needed. -/
 theorem eml_induction_k {P : ℕ → Prop}
-(mono : ∀ n, P n → P (n + 1))
-(base: P 1) :
-∀ t : EMLTerm, P (K[t]) := by
--- Auxiliary lemma: P holds for all n ≥ 1
-have hP : ∀ n : ℕ, 1 ≤ n → P n := by
-intro n
-induction n with
-| zero => enter h; omega
-| succ m ih =>
-intro _
-cases m with
-| zero => exact base
-| succ k => exact mono (k + 1) (ih (by omega))
--- K[t] ≥ 1 for all t (by complexity_pos)
-intro t
-exact hP (K[t]) (complexity_pos t)
+    (mono : ∀ n, P n → P (n + 1))
+    (base : P 1) :
+    ∀ t : EMLTerm, P (K[t]) := by
+  -- Auxiliary lemma: P holds for all n ≥ 1
+  have hP : ∀ n : ℕ, 1 ≤ n → P n := by
+    intro n
+    induction n with
+    | zero      => intro h; omega
+    | succ m ih =>
+      intro _
+      cases m with
+      | zero   => exact base
+      | succ k => exact mono (k + 1) (ih (by omega))
+  -- K[t] ≥ 1 for all t (by complexity_pos)
+  intro t
+  exact hP (K[t]) (complexity_pos t)
 
--- ==============================================================
--- §12. CATALAN NUMBERS AND EML GRAMMAR
--- =============================================================
+-- ============================================================
+-- §12. CATALAN NUMBERS AND THE EML GRAMMAR
+-- ============================================================
 --
--- Proposition 1.3 (EML_Axiomatica.md): The number of EMLTerm trees
+-- Proposition 1.3 (EML_Axiomatica.md): the number of EMLTerm trees
 -- with exactly n leaves is the Catalan number C_{n-1}.
-
+--
 -- For n=1: 1 tree (one)
--- For n=2: 1 tree (approx. one one)
+-- For n=2: 1 tree (app one one)
 -- For n=3: 2 trees
 -- For n=4: 5 trees
 -- etc.
 
-/-- Auxiliary with fuel: structural recursion over fuel (≥ maximum depth = n-1). -/
+/-- Auxiliary with fuel: structural recursion on fuel (≥ max depth = n-1). -/
 private def termsOfComplexityFuel : ℕ → ℕ → List EMLTerm
-| _, 0 => []
-| _, 1 => [one]
-| 0, _ => [] -- fuel exhausted (never occurs if fuel ≥ n)
-| fuel + 1, n + 2 =>
-(List.range (n + 1)).flatMap fun k =>
-let left_k := k + 1
-let right_k := n + 1 - k
-(termsOfComplexityFuel fuel left_k).flatMap fun l =>
-(termsOfComplexityFuel fuel right_k).map fun r =>
-app l r
+  | _, 0 => []
+  | _, 1 => [one]
+  | 0, _ => []            -- fuel exhausted (never occurs if fuel ≥ n)
+  | fuel + 1, n + 2 =>
+    (List.range (n + 1)).flatMap fun k =>
+      let left_k  := k + 1
+      let right_k := n + 1 - k
+      (termsOfComplexityFuel fuel left_k).flatMap fun l =>
+      (termsOfComplexityFuel fuel right_k).map fun r =>
+      app l r
 
 /-- Enumerates all EMLTerm trees with complexity exactly n. -/
 def termsOfComplexity (n : ℕ) : List EMLTerm :=
-termsOfComplexityFuel n n
+  termsOfComplexityFuel n n
 
---Manual count verifications
-#eval (termsOfComplexity 1).length -- must be 1
-#eval (termsOfComplexity 2).length -- must be 1
-#eval (termsOfComplexity 3).length -- must be 2
-#eval (termsOfComplexity 4).length -- must be 5
+-- Manual count verifications
+#eval (termsOfComplexity 1).length  -- should be 1
+#eval (termsOfComplexity 2).length  -- should be 1
+#eval (termsOfComplexity 3).length  -- should be 2
+#eval (termsOfComplexity 4).length  -- should be 5
 
 end EMLTerm
 

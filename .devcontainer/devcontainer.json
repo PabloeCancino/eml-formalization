@@ -7,7 +7,9 @@
         "leanprover.lean4"
       ],
       "settings": {
-        "lean4.serverEnvPaths": ["${env:HOME}/.elan/bin"]
+        "lean4.serverEnvPaths": [
+          "${env:HOME}/.elan/bin"
+        ]
       }
     }
   },

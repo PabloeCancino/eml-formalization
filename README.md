@@ -92,7 +92,7 @@ All files compile with **0 errors, 0 warnings, 0 sorries** (axioms are declared 
 Licenciatura en Matemáticas — Universidad Autónoma de Nayarit (UAN)  
 Contact: [pabloe.cancino@uan.edu.mx]
 
-**Sergio Enrique Yarza Acuña**
+**Sergio Enrique Yarza Acuña**  
 Licenciatura en Matemáticas — Universidad Autónoma de Nayarit (UAN)  
 Contact: [sergio.yarza@uan.edu.mx]
 

@@ -65,56 +65,48 @@ structure EMLWitness (name : String) where
   kProof      : K[term] = complexity  -- verificación
 
 -- witnesses VERIFIED de las primitivas básicas
+-- (solo las 4 que cumplen K ≤ 6 con el compilador EML estándar;
+--  Inv y Sqrt tienen K > 6 vía bootstrapping; ver Basic.lean §9)
 
 def w_Exp : EMLWitness "Exp" where
   term       := tExp one
   complexity := 2
   kBound     := by norm_num
-  kProof     := by simp [tExp, EMLTerm.complexity]
+  kProof     := by simp [complexity_tExp, complexity_one_eq]
 
 def w_Log : EMLWitness "Log" where
   term       := tLog one
   complexity := 4
   kBound     := by norm_num
-  kProof     := by simp [tLog, EMLTerm.complexity]; ring
+  kProof     := by simp [complexity_tLog, complexity_one_eq]
 
 def w_Minus : EMLWitness "Minus" where
   term       := tMinus one
-  complexity := 5
+  -- K[tMinus one] = K[one] + 5 = 1 + 5 = 6
+  complexity := 6
   kBound     := by norm_num
-  kProof     := by
-    simp [tMinus, tLog, tExp, EMLTerm.complexity]; ring
+  kProof     := by simp [complexity_tMinus, complexity_one_eq]
 
 def w_Subtract : EMLWitness "Subtract" where
   term       := tSubtract one one
   complexity := 6
   kBound     := by norm_num
-  kProof     := by
-    simp [tSubtract, tLog, tExp, EMLTerm.complexity]; ring
+  kProof     := by native_decide
 
-def w_Inv : EMLWitness "Inv" where
-  term       := tInv one
-  complexity := 6
-  kBound     := by norm_num
-  kProof     := by
-    simp [tInv, tMinus, tLog, tExp, EMLTerm.complexity]; ring
+-- NOTA: tInv one tiene K=10, tSqrt one tiene K≫6 (compilador estándar).
+-- El testigo óptimo (K≤6) para Inv/Sqrt requiere búsqueda directa (§9 Basic.lean).
+--   Inv: K_EML = 6 (búsqueda directa), K_compiler = 10
+--   Sqrt: K_EML = 6 (búsqueda directa), K_compiler ≫ 6
 
-def w_Sqrt : EMLWitness "Sqrt" where
-  term       := tSqrt one
-  complexity := 6
-  kBound     := by norm_num
-  kProof     := by
-    simp [tSqrt, tHalf, tDivide, tTimes, tInv, tMinus, tLog, tExp,
-          tPlus, tSubtract, tTwo, EMLTerm.complexity]
-    ring
-
--- Verification de la K bound ≤ 6 para todos los witnesses
+-- Verification de la K bound ≤ 6 para los 4 witnesses compilador-verificados
 theorem all_witnesses_K_leq_6 :
-    K[w_Exp.term] ≤ 6 ∧ K[w_Log.term] ≤ 6 ∧ K[w_Minus.term] ≤ 6 ∧
-    K[w_Subtract.term] ≤ 6 ∧ K[w_Inv.term] ≤ 6 ∧ K[w_Sqrt.term] ≤ 6 := by
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_⟩ <;>
-  · rw [← (by rfl : K[_] = _)]   -- reescribir vía kProof
-    exact (by decide)              -- verificar la cota ≤ 6
+    K[w_Exp.term] ≤ 6 ∧ K[w_Log.term] ≤ 6 ∧
+    K[w_Minus.term] ≤ 6 ∧ K[w_Subtract.term] ≤ 6 := by
+  simp only [w_Exp, w_Log, w_Minus, w_Subtract,
+             complexity_tExp, complexity_tLog,
+             complexity_tMinus, complexity_tSubtract,
+             complexity_one_eq]
+  norm_num
 
 end Witnesses
 
@@ -127,21 +119,38 @@ section SemanticVerification
 -- La constante e: ⟦tExp one⟧(z) = exp(1) = e
 theorem eval_w_Exp (z : ℂ) :
     ⟦w_Exp.term⟧(z) = Complex.exp 1 := by
-  simp [w_Exp, eval_tExp, eval_one]
+  simp [w_Exp, tExp, eval_app, eval_one, Complex.log_one, sub_zero]
 
--- Log: ⟦tLog one⟧(z) = log(exp(1)) = 1 (en ℂ, rama principal)
+-- Log: ⟦tLog one⟧(z) = log(1) = 0
+-- (eval_tLog requiere: ⟦one⟧(z) ≠ 0 y im(log(1)) ∈ Ioo(-π, π))
 theorem eval_w_Log (z : ℂ) :
-    ⟦w_Log.term⟧(z) = Complex.log (Complex.exp 1) := by
-  simp [w_Log, eval_tLog, eval_one]
+    ⟦w_Log.term⟧(z) = 0 := by
+  simp only [w_Log]
+  rw [eval_tLog one z
+    (by simp [eval_one])
+    (by simp only [eval_one, Complex.log_one, Complex.zero_im]
+        constructor
+        · linarith [Real.pi_pos]
+        · linarith [Real.pi_pos])]
+  simp [eval_one, Complex.log_one]
 
--- Subtract(1,1) = exp(log 1) - log(exp 1) = 1 - 1 = 0
+-- Subtract(1,1): eval_tSubtract requiere ⟦one⟧ ≠ 0, im(log 1) ∈ Ioo, im(1) ∈ Ioc
 theorem eval_subtract_11 (z : ℂ) :
     ⟦tSubtract one one⟧(z) = 0 := by
-  simp [tSubtract, eval, eval_one, Complex.log_one,
-        Complex.exp_zero, Complex.log_exp]
-  ring
+  rw [eval_tSubtract one one z
+    (by simp [eval_one])
+    (by simp only [eval_one, Complex.log_one, Complex.zero_im]
+        constructor
+        · linarith [Real.pi_pos]
+        · linarith [Real.pi_pos])
+    (by simp only [eval_one, Complex.one_im]
+        constructor
+        · linarith [Real.pi_pos]
+        · exact le_of_lt (by linarith [Real.pi_pos]))]
+  simp [eval_one]
 
 -- witness de exp evaluado en un punto genérico
+set_option linter.unusedVariables false in
 theorem testigo_Exp_eval (z : ℂ) (w : ℂ) :
     ⟦tExp one⟧(z) = Complex.exp 1 := eval_w_Exp z
 
@@ -162,11 +171,15 @@ theorem composition_Exp (t : EMLTerm) (φ : ℂ → ℂ)
     ∀ z : ℂ, ⟦tExp t⟧(z) = Complex.exp (φ z) := by
   intro z; rw [eval_tExp, ht]
 
-/-- Lema de cierre bajo Log: si ⟦t⟧ = φ, entonces ⟦tLog t⟧ = log∘φ. -/
+/-- Lema de cierre bajo Log: si ⟦t⟧ = φ, entonces ⟦tLog t⟧ = log∘φ.
+    Requiere: φ z ≠ 0 y im(log(φ z)) ∈ Ioo(-π, π) para todo z. -/
 theorem composition_Log (t : EMLTerm) (φ : ℂ → ℂ)
-    (ht : ∀ z : ℂ, ⟦t⟧(z) = φ z) :
+    (ht  : ∀ z : ℂ, ⟦t⟧(z) = φ z)
+    (hne : ∀ z : ℂ, φ z ≠ 0)
+    (hbr : ∀ z : ℂ, (Complex.log (φ z)).im ∈ Set.Ioo (-Real.pi) Real.pi) :
     ∀ z : ℂ, ⟦tLog t⟧(z) = Complex.log (φ z) := by
-  intro z; rw [eval_tLog, ht]
+  intro z
+  rw [eval_tLog t z (ht z ▸ hne z) (ht z ▸ hbr z), ht]
 
 /-- Lema central de composición: si ⟦t⟧ = φ y ⟦s⟧ = ψ,
     entonces ⟦app t s⟧ = exp∘φ - log∘ψ. -/
@@ -180,7 +193,7 @@ theorem composition_f (t s : EMLTerm) (φ ψ : ℂ → ℂ)
 theorem elementary_has_eml_witness :
     ∀ f : ℂ → ℂ, IsLiouvilleElementaryComplex f →
     ∃ t : EMLTerm, ∀ z : ℂ, ⟦t⟧(z) = f z :=
-  fun f hf => hf  -- por definición de IsLiouvilleElementaryComplex
+  fun _f hf => hf  -- por definición de IsLiouvilleElementaryComplex
 
 end CompositionLemmas
 
@@ -217,7 +230,7 @@ theorem eml_completeness_via_liouville :
 
 /-- Corolario: todo árbol EMLTerm es una función elemental. -/
 theorem every_eml_term_is_elementary (t : EMLTerm) :
-    IsLiouvilleElementaryComplex (⟦t⟧) :=
+    IsLiouvilleElementaryComplex (fun z => ⟦t⟧(z)) :=
   eml_term_is_elementary t
 
 /-- Corolario: toda función elemental tiene K_EML finito. -/

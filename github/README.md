@@ -82,11 +82,13 @@ All files compile with **0 errors, 0 warnings, 0 sorries** (axioms are declared 
 - **P2** — Stachowiak, G. (2026). *Sheffer operators for abelian groups*. arXiv:2604.23893v1.
 - **P3** — Lamharzi Alaoui, M. (2026). *From fixed points to two-cycles: obstructions and orbit lifts for analytic self-seeding Sheffer operators*. Firassa AI. [GitHub](https://github.com/marouane53/eml-sheffer-obstructions).
 
-## Author
+## Authors
 
-**[Your Name]**  
-Licenciatura en Matemáticas — Universidad Autónoma de Nayarit (UAN)  
-Contact: [your-email@uan.edu.mx]
+**Pablo Eduardo Cancino Marentes**
+Licenciatura en Matemáticas — Universidad Autónoma de Nayarit (UAN)
+
+**Sergio Enrique Yarza Acuña**
+Licenciatura en Matemáticas — Universidad Autónoma de Nayarit (UAN)
 
 ## License
 

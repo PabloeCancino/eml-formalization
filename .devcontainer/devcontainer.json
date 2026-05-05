@@ -1,0 +1,16 @@
+{
+  "name": "EML Lean 4 Formalization",
+  "image": "ubuntu:24.04",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "leanprover.lean4"
+      ],
+      "settings": {
+        "lean4.serverEnvPaths": ["${env:HOME}/.elan/bin"]
+      }
+    }
+  },
+  "postCreateCommand": "bash .devcontainer/post-create.sh",
+  "remoteUser": "vscode"
+}

@@ -29,9 +29,30 @@ desktop.ini
 # Carpetas de trabajo privado (no subir al repo)
 codigo_y_artefactos/
 github/rescatados/
+github/push_github.ps1
 Borradores/
 Documentos/
 Insumos/
 Proceso_creativo/
 ejercicios/
 lean4_txt/
+HTML/
+SymbolicRegressionPackage/
+
+# Archivos de configuración local
+.claude/
+Math_All_in_One.code-workspace
+instrucciones_compilar.txt
+
+# Archivos auxiliares de LaTeX
+arxiv/*.aux
+arxiv/*.log
+arxiv/*.out
+arxiv/*.bbl
+arxiv/*.blg
+arxiv/*.synctex.gz
+arxiv/*.toc
+arxiv/*.fls
+arxiv/*.fdb_latexmk
+arxiv/*.zip
+arxiv/*.md

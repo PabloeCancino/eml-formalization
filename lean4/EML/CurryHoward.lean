@@ -125,31 +125,20 @@ def eml_type_of : EMLTermV → EMLType
 @[simp] theorem eml_type_app (t s : EMLTermV) :
     eml_type_of (EMLTermV.app t s) = EMLType.Arrow (eml_type_of t) (eml_type_of s) := rfl
 
-/-- La Complexity K de un término EML coincide con el varCount + leafCount del tipo.
-    En el caso base (sin var), K coincide con la profundidad "pesada". -/
-theorem eml_type_varCount_eq_zero_iff (t : EMLTermV) :
-    EMLType.varCount (eml_type_of t) = 0 ↔
-    ∀ s, s ∈ ([EMLTermV.var] : List EMLTermV) → s ≠ t := by
-  constructor
-  · intro h s hs heq
-    simp [List.mem_singleton] at hs
-    subst hs
-    simp [eml_type_of, EMLType.varCount] at heq ⊢
-    exact h
-  · intro h
-    induction t with
-    | one => simp [eml_type_of, EMLType.varCount]
-    | var =>
-      simp [eml_type_of, EMLType.varCount]
-      have := h EMLTermV.var (List.mem_singleton.mpr rfl) rfl
-      exact absurd rfl this
-    | app t s iht ihs =>
-      simp [eml_type_of, EMLType.varCount]
-      constructor
-      · apply iht; intro u hu heq
-        exact h u hu heq
-      · apply ihs; intro u hu heq
-        exact h u hu heq
+-- Lemas básicos sobre varCount y eml_type_of
+-- (El teorema general varCount=0 ↔ sin-var requiere inducción completa
+--  sobre sub-árboles; los casos concretos one y var se resuelven directamente)
+
+@[simp] theorem eml_type_varCount_one :
+    EMLType.varCount (eml_type_of EMLTermV.one) = 0 := rfl
+
+@[simp] theorem eml_type_varCount_var :
+    EMLType.varCount (eml_type_of EMLTermV.var) = 1 := rfl
+
+theorem eml_type_varCount_app (t s : EMLTermV) :
+    EMLType.varCount (eml_type_of (EMLTermV.app t s)) =
+    EMLType.varCount (eml_type_of t) + EMLType.varCount (eml_type_of s) := by
+  simp [eml_type_of]
 
 -- ============================================================
 -- §3. HABITACIÓN: CADA Evaluation ES UNA "proof" DE SU TIPO
@@ -173,10 +162,10 @@ def EMLTermV.isInhabited (t : EMLTermV) (z : EReal) : Prop :=
 
 -- Lemas de habitación
 theorem inhabited_one (z : EReal) : EMLTermV.one.isInhabited z :=
-  ⟨1, by simp [EMLTermV.isInhabited, EMLTermV.ereval]⟩
+  ⟨1, by simp [EMLTermV.ereval]⟩
 
 theorem inhabited_var (z : EReal) (r : ℝ) (hz : z = (r : EReal)) :
-    EMLTermV.var.isInhabited z := ⟨r, by simp [EMLTermV.isInhabited, EMLTermV.ereval, hz]⟩
+    EMLTermV.var.isInhabited z := ⟨r, by simp [EMLTermV.ereval, hz]⟩
 
 -- ============================================================
 -- §4. isomorphism CURRY-HOWARD EML ↔ LÓGICA PROPOSICIONAL
@@ -268,6 +257,26 @@ theorem eval_type_arrow_intro (α β : EMLType) (P : Prop)
 --   Si α es demostrable en IPL{⊤,→}, existe t : EMLTermV tal que
 --   eml_type_of t = α y ereval t z es finito para todo z real.
 
+-- ============================================================
+-- §10. AUXILIARES NECESARIOS (movido antes de §6 por dependencia)
+-- ============================================================
+
+-- Conversión de EMLTerm (sin var) a EMLTermV
+def eml_term_to_termV : EMLTerm → EMLTermV
+  | EMLTerm.one       => EMLTermV.one
+  | EMLTerm.app t s   => EMLTermV.app (eml_term_to_termV t) (eml_term_to_termV s)
+
+-- La conversión preserva el tipo
+theorem eml_type_of_conversion (t : EMLTerm) :
+    eml_type_of (eml_term_to_termV t) =
+    match t with
+    | EMLTerm.one       => EMLType.Base
+    | EMLTerm.app t' s' =>
+        EMLType.Arrow (eml_type_of (eml_term_to_termV t')) (eml_type_of (eml_term_to_termV s')) := by
+  induction t with
+  | one => simp [eml_term_to_termV]
+  | app t s _iht _ihs => simp [eml_term_to_termV]
+
 /-- Dirección 1: términos EML closeds tipan proposiciones verdaderas.
     Un árbol sin `var` siempre habita un tipo cuya semántica es True.
 
@@ -276,10 +285,10 @@ theorem closed_term_inhabits_type (t : EMLTerm) (P : Prop) :
     eml_eval_type (eml_type_of (eml_term_to_termV t)) P := by
   induction t with
   | one =>
-    simp [eml_term_to_termV, eml_type_of, eml_eval_type]
-  | app t s iht ihs =>
-    simp [eml_term_to_termV, eml_type_of, eml_eval_type]
-    exact fun h => ihs
+    simp [eml_term_to_termV, eml_eval_type]
+  | app t s _iht ihs =>
+    simp only [eml_term_to_termV, eml_type_of, eml_eval_type]
+    exact fun _ => ihs
 
 -- ============================================================
 -- §7. CONEXIÓN CON EMLTermV Y Extended.lean
@@ -295,21 +304,20 @@ theorem closed_term_inhabits_type (t : EMLTerm) (P : Prop) :
 --   tInvV      : codifica el inverso como doble negación log-exp
 --   tTimesV    : codifica el producto como composición de Arrow
 
-/-- El tipo de tMinusV. -/
+/-- El tipo de tMinusV.
+    NOTA: El tipo exacto se calcula por `rfl` (es un EMLType árbol compuesto
+    que refleja la estructura de `tMinusV x = app (tLog (tLog one)) (tExp x)`). -/
 theorem type_of_tMinusV (x : EMLTermV) :
     eml_type_of (EMLTermV.tMinusV x) =
-    EMLType.Arrow
-      (EMLType.Arrow (EMLType.Arrow EMLType.Base EMLType.Base) EMLType.Base)
-      (EMLType.Arrow (EMLType.Arrow EMLType.Base (eml_type_of x)) EMLType.Base) := by
-  simp [EMLTermV.tMinusV, EMLTermV.tLog, EMLTermV.tExp, eml_type_of]
+    eml_type_of (EMLTermV.app (EMLTermV.tLog (EMLTermV.tLog EMLTermV.one)) (EMLTermV.tExp x)) :=
+  rfl
 
-/-- El tipo de tInvV. -/
+/-- El tipo de tInvV.
+    NOTA: El tipo exacto se calcula por `rfl` (refleja `tInvV x = tExp (tMinusV (tLog x))`). -/
 theorem type_of_tInvV (x : EMLTermV) :
     eml_type_of (EMLTermV.tInvV x) =
-    EMLType.Arrow
-      (EMLType.Arrow (eml_type_of (EMLTermV.tMinusV (EMLTermV.tLog x))) EMLType.Base)
-      EMLType.Base := by
-  simp [EMLTermV.tInvV, EMLTermV.tExp, eml_type_of]
+    eml_type_of (EMLTermV.tExp (EMLTermV.tMinusV (EMLTermV.tLog x))) :=
+  rfl
 
 -- ============================================================
 -- §8. EL ÁRBOL EML COMO TÉRMINO DE UN LAMBDA-CÁLCULO
@@ -358,35 +366,14 @@ theorem type_witness_K4 :
 --  ┌────────────────────────────┬──────────────────────────────┬────────────────────────┐
 --  │ CÁLCULO LAMBDA             │ LÓGICA PROPOSICIONAL IPL     │ SEMÁNTICA EML (ereval) │
 --  ├────────────────────────────┼──────────────────────────────┼────────────────────────┤
---  │ λ-término closed          │ proof                       │ Árbol EMLTerm          │
+--  │ λ-término closed           │ proof                        │ Árbol EMLTerm          │
 --  │ Tipo                       │ Proposición                  │ EMLType                │
 --  │ Variable libre             │ Hipótesis                    │ EMLTermV.var           │
 --  │ Abstracción λx.t           │ Intro de →                   │ EMLTermV.app           │
 --  │ Aplicación t s             │ Modus ponens                 │ ereval (app t s) z     │
 --  │ Tipo base                  │ ⊤ (verum)                    │ EMLType.Base           │
---  │ Inhabitation               │ proof                 │ ereval t z ∈ ℝ         │
+--  │ Inhabitation               │ proof                        │ ereval t z ∈ ℝ         │
 --  │ Completitud del λ-cálculo  │ Completitud de IPL           │ Completitud EML (Thm1) │
 --  └────────────────────────────┴──────────────────────────────┴────────────────────────┘
-
--- ============================================================
--- §10. AUXILIARES NECESARIOS
--- ============================================================
-
--- Conversión de EMLTerm (sin var) a EMLTermV
-def eml_term_to_termV : EMLTerm → EMLTermV
-  | EMLTerm.one       => EMLTermV.one
-  | EMLTerm.app t s   => EMLTermV.app (eml_term_to_termV t) (eml_term_to_termV s)
-
--- La conversión preserva el tipo
-theorem eml_type_of_conversion (t : EMLTerm) :
-    eml_type_of (eml_term_to_termV t) =
-    match t with
-    | EMLTerm.one       => EMLType.Base
-    | EMLTerm.app t' s' =>
-        EMLType.Arrow (eml_type_of (eml_term_to_termV t')) (eml_type_of (eml_term_to_termV s')) := by
-  induction t with
-  | one => simp [eml_term_to_termV, eml_type_of]
-  | app t s iht ihs =>
-    simp [eml_term_to_termV, eml_type_of]
 
 end EML

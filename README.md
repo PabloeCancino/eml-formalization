@@ -7,7 +7,7 @@
 [![License: Apache 2.0](https://img.shields.io/badge/Code-Apache%202.0-blue.svg)](LICENSE-CODE)
 
 A Lean 4 formalization of the **EML operator** `eml(x, y) = exp(x) − log(y)` and its
-algebraic structure, following Odrzywołek (arXiv:2603.21852, 2026) and
+algebraic structure, following Odrzywołek (arXiv:2603.21852, 2026), Stachowiak (arxiv:2604.23893) and
 Lamharzi Alaoui (2026).
 
 ## Overview

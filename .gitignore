@@ -25,3 +25,13 @@ lean4/EML/translate_*.ps1
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# Carpetas de trabajo privado (no subir al repo)
+codigo_y_artefactos/
+github/rescatados/
+Borradores/
+Documentos/
+Insumos/
+Proceso_creativo/
+ejercicios/
+lean4_txt/

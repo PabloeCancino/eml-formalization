@@ -3,7 +3,8 @@
 [![Lean 4](https://img.shields.io/badge/Lean-4.29.0-blue)](https://leanprover.github.io/)
 [![Mathlib](https://img.shields.io/badge/Mathlib-4.29.0-green)](https://leanprover-community.github.io/mathlib4_docs/)
 [![arXiv](https://img.shields.io/badge/arXiv-draft-orange)](./paper/main.tex)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/Paper-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/Code-Apache%202.0-blue.svg)](LICENSE-CODE)
 
 A Lean 4 formalization of the **EML operator** `eml(x, y) = exp(x) − log(y)` and its
 algebraic structure, following Odrzywołek (arXiv:2603.21852, 2026) and
@@ -89,4 +90,13 @@ Contact: [your-email@uan.edu.mx]
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) for details.
+This project uses a **dual-license** scheme to protect both the academic work and the software:
+
+| Component | License | File |
+|---|---|---|
+| Manuscript, paper, figures, tables | [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) | [LICENSE](LICENSE) |
+| Lean 4 source code, scripts | [Apache 2.0](https://www.apache.org/licenses/LICENSE-2.0) | [LICENSE-CODE](LICENSE-CODE) |
+
+**CC BY-NC 4.0** — You may share and adapt the paper with attribution, but **not for commercial purposes** without explicit permission.
+
+**Apache 2.0** — You may use, modify, and distribute the code freely, including patent protections. Attribution required. Compatible with [Mathlib](https://github.com/leanprover-community/mathlib4).

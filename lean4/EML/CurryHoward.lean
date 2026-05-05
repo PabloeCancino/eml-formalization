@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- EML/CurryHoward.lean
 -- ECT-02: Teoría de Tipos y CORRESPONDENCE de Curry-Howard para EML
 --

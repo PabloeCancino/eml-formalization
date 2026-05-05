@@ -1,4 +1,4 @@
-﻿-- ============================================================
+-- ============================================================
 -- EML/Completeness.lean
 -- Completeness theorem EML en Lean 4
 -- ECT-08: Consolidación final

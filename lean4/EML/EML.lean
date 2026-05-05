@@ -1,4 +1,4 @@
-﻿-- EML.lean — Entry point of the EML project
+-- EML.lean — Entry point of the EML project
 -- Re-exports all library modules
 
 import EML.Basic

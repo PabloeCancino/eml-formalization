@@ -27,6 +27,7 @@ Thumbs.db
 desktop.ini
 
 # Carpetas de trabajo privado (no subir al repo)
+github/
 codigo_y_artefactos/
 github/rescatados/
 github/push_github.ps1

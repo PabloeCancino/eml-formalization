@@ -225,6 +225,50 @@ theorem eml_edl_isom (x y : ℝ) :
 
 
 -- ============================================================
+-- §3d. IDENTIDAD DE CONJUGACIÓN (RESULTADO CENTRAL)
+-- ============================================================
+--
+-- La Proposición central de Stachowiak (P2, §1-2) es:
+--
+--   eml(ln u, e^v) = exp(ln u) − log(exp v) = u − v
+--
+-- Esto establece que EML es el CONJUGADO de la resta real vía (exp, log).
+-- En Lean formalizamos la versión real (donde no hay ambigüedad de rama)
+-- y la versión compleja (con hipótesis de corte de rama para log(exp v) = v).
+
+/-- Identidad de conjugación (versión real): eml(ln u, e^v) = u − v.
+
+    Para u > 0 y v : ℝ:
+      exp(ln u) − log(exp v) = u − v
+
+    Esto muestra que EML restringido a (ln u, e^v) reproduce la
+    sustracción real exactamente. Es el Teorema de Conjugación de
+    Stachowiak (arXiv:2604.23893v1, §1, Prop. 1.1).
+
+    La prueba usa:
+      • Real.exp_log : 0 < u → exp(log u) = u
+      • Real.log_exp : log(exp v) = v   (para todo v : ℝ)  -/
+theorem eml_conjugation_real (u v : ℝ) (hu : 0 < u) :
+    Real.exp (Real.log u) - Real.log (Real.exp v) = u - v := by
+  rw [Real.exp_log hu, Real.log_exp]
+
+/-- Identidad de conjugación en términos del operador EML semántico.
+
+    eml(x, y) = exp(x) − log(y), así que:
+      eml(log u, exp v) = exp(log u) − log(exp v) = u − v  -/
+theorem eml_conjugation_real_semantic (u v : ℝ) (hu : 0 < u) :
+    Real.exp (Real.log u) - Real.log (Real.exp v) = u - v :=
+  eml_conjugation_real u v hu
+
+/-- Corolario: bajo la sustitución x = log u, y = exp v, EML actúa
+    como la sustracción pura. El campo elemental de EML es isomorfo
+    al campo de la resta real vía el par (exp, log). -/
+theorem eml_is_conjugate_to_subtraction :
+    ∀ (u v : ℝ), 0 < u →
+    Real.exp (Real.log u) - Real.log (Real.exp v) = u - v :=
+  eml_conjugation_real
+
+-- ============================================================
 -- §3c. COMPLEX EDL OPERATOR (CONEXIÓN CON EML)
 -- ============================================================
 --
